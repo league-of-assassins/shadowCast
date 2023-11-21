@@ -7,9 +7,8 @@ using namespace std;
 using namespace sf;
 
 
-#define wallTotal 4
-
-#define pointsTotal 7
+const int wallTotal = 4;
+const int pointsTotal = 7;
 
 
 class shadowCast {
@@ -46,14 +45,16 @@ private:
 	};
 
 
-	Vector2f mousePos;
+	RectangleShape borderCube;
 
-	float border[2][2] = { {0, width}, {0, height} };
+	float border[2][2] = { {50, width - 50}, {50, height - 50} };
+
+
+	Vector2f mousePos;
 
 	float radian = 3.14 / 180;
 
 	bool undefined = false;
-
 
 
 public:
@@ -70,7 +71,7 @@ public:
 
 	void findSlope(Vector2f posA, Vector2f posB, float& h, float& v, float& m, float& b);
 
-	bool findBorder(Vector2f& posV, float h, float v, float m, float b, int side, int sideArray[2]);
+	bool findBorderIntersection(Vector2f& posV, float h, float v, float m, float b, int side, int sideArray[2]);
 
 	void findCorner(Vector2f pointPos[pointsTotal], Vector2f wallBorderPos[2], int pointSide[2][2], int wallSide[2][2]);
 
