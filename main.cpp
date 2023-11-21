@@ -98,15 +98,14 @@ void shadowCast::objects() {
 	}
 
 
-
 	//FIND WALL END POINT
 	for (int i = 0; i < wallTotal; i++) {
 		wallPos[i][1].x = wallPos[i][0].x + wallSize[i].x * cos(wallAngle[i] * radian);
 		wallPos[i][1].y = wallPos[i][0].y + wallSize[i].x * sin(wallAngle[i] * radian);
 	}
 
-	//FIND WALL BORDER POINTS
 
+	//FIND WALL BORDER POINTS
 	float h, v, m, b;
 
 	for (int i = 0; i < wallTotal; i++) {
@@ -123,6 +122,7 @@ void shadowCast::objects() {
 			}
 		}
 	}
+
 
 
 	//SHADOW
@@ -151,6 +151,8 @@ int shadowCast::findSide(float s) {
 	else return 0;
 }
 
+
+
 void shadowCast::findSlope(Vector2f posA, Vector2f posB, float& h, float& v, float& m, float& b) {
 	h = posA.x - posB.x;
 	v = posA.y - posB.y;
@@ -159,18 +161,57 @@ void shadowCast::findSlope(Vector2f posA, Vector2f posB, float& h, float& v, flo
 
 	b = posA.y - posA.x * m;
 
+
 	if (abs(h) < 1) {
 		undefined = true;
+
 		m = 0;
 		b = posB.x;
 	}
 }
 
+
+
+bool shadowCast::findBorder(Vector2f& pos, float h, float v, float m, float b, int side, int sideArray[2]) {
+
+
+	if (undefined) side = 1;
+
+	float distance[2] = { h, v };
+
+	sideArray[0] = side;
+	sideArray[1] = findSide(distance[side]);
+
+	pos.x = border[side][sideArray[1]];
+
+	if (side == 0 || undefined) {
+		if (undefined) undefined = false;
+		pos.y = pos.x * m + b;
+	}
+
+	else {
+		pos.y = (pos.x - b) / m;
+	}
+
+	if (side == 1) {
+		float temp = pos.x;
+		pos.x = pos.y;
+		pos.y = temp;
+	}
+
+	if (pos.y >= border[side][0] && pos.y <= border[side][1]) {
+		return true;
+	}
+
+	else return false;
+}
+
+
+
 void shadowCast::findCorner(Vector2f pointPos[pointsTotal], Vector2f wallBorderPos[2], int pointSide[2][2], int wallSide[2][2]) {
 
 	float point[3][2] = {
 		{pointPos[6].x, pointPos[6].y},
-		{pointPos[2].x, pointPos[2].y},
 		{pointPos[2].x, pointPos[2].y}
 	};
 
@@ -179,14 +220,10 @@ void shadowCast::findCorner(Vector2f pointPos[pointsTotal], Vector2f wallBorderP
 	{wallBorderPos[1].x, wallBorderPos[1].y}
 	};
 
-	int temp;
-	int side;
+	int side, temp, count = 0, k = 5;
 
 	bool midEnabled = false;
 
-	int count = 0;
-
-	int k = 5;
 
 	for (int i = 0; i < 2; i++) {
 
@@ -238,38 +275,6 @@ void shadowCast::findCorner(Vector2f pointPos[pointsTotal], Vector2f wallBorderP
 
 }
 
-bool shadowCast::findBorder(Vector2f& pos, float h, float v, float m, float b, int side, int sideArray[2]) {
-
-	if (undefined) side = 1;
-
-	float distance[2] = { h, v };
-
-	sideArray[0] = side;
-	sideArray[1] = findSide(distance[side]);
-
-	pos.x = border[side][sideArray[1]];
-
-	if (side == 0 || undefined) {
-		if (undefined) undefined = false;
-		pos.y = pos.x * m + b;
-	}
-
-	else {
-		pos.y = (pos.x - b) / m;
-	}
-
-	if (side == 1) {
-		float temp = pos.x;
-		pos.x = pos.y;
-		pos.y = temp;
-	}
-
-	if (pos.y >= border[side][0] && pos.y <= border[side][1]) {
-		return true;
-	}
-
-	else return false;
-}
 
 
 void shadowCast::shadowMain() {
@@ -280,7 +285,7 @@ void shadowCast::shadowMain() {
 
 	for (int i = 0; i < wallTotal; i++) {
 
-		//---FIND POINTS 2, 6---//
+		//---FIND POINTS 2, 6 (OUTER)---//
 
 		for (int p = 0; p < 2; p++) {
 
@@ -292,7 +297,7 @@ void shadowCast::shadowMain() {
 		}
 
 
-		//---FIND POINTS 3, 4, 5---//
+		//---FIND POINTS 3, 4, 5 (INNER)---//
 
 		findCorner(shadowPos[i], wallBorderPos[i], pointSide, wallBorderSide[i]);
 	}
@@ -312,6 +317,8 @@ void shadowCast::mouseLogic() {
 
 }
 
+
+
 void shadowCast::setPositions() {
 
 	//SHADOW POINTS
@@ -322,9 +329,13 @@ void shadowCast::setPositions() {
 	}
 }
 
+
+
+
+
 int main() {
 
-	shadowCast obj;
+	shadowCast shadowCast;
 
 	return 0;
 }

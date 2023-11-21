@@ -70,9 +70,9 @@ public:
 
 	void findSlope(Vector2f posA, Vector2f posB, float& h, float& v, float& m, float& b);
 
-	void findCorner(Vector2f pointPos[pointsTotal], Vector2f wallBorderPos[2], int pointSide[2][2], int wallSide[2][2]);
-
 	bool findBorder(Vector2f& pos, float h, float v, float m, float b, int side, int sideArray[2]);
+
+	void findCorner(Vector2f pointPos[pointsTotal], Vector2f wallBorderPos[2], int pointSide[2][2], int wallSide[2][2]);
 
 	void shadowMain();
 
