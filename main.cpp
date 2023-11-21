@@ -172,8 +172,9 @@ void shadowCast::findSlope(Vector2f posA, Vector2f posB, float& h, float& v, flo
 
 
 
-bool shadowCast::findBorder(Vector2f& pos, float h, float v, float m, float b, int side, int sideArray[2]) {
+bool shadowCast::findBorder(Vector2f& posV, float h, float v, float m, float b, int side, int sideArray[2]) {
 
+	float pos[2] = { posV.x, posV.y };
 
 	if (undefined) side = 1;
 
@@ -182,24 +183,22 @@ bool shadowCast::findBorder(Vector2f& pos, float h, float v, float m, float b, i
 	sideArray[0] = side;
 	sideArray[1] = findSide(distance[side]);
 
-	pos.x = border[side][sideArray[1]];
+	pos[side] = border[side][sideArray[1]];
 
 	if (side == 0 || undefined) {
 		if (undefined) undefined = false;
-		pos.y = pos.x * m + b;
+		pos[!side] = pos[side] * m + b;
 	}
 
 	else {
-		pos.y = (pos.x - b) / m;
+		pos[!side] = (pos[side] - b) / m;
 	}
 
-	if (side == 1) {
-		float temp = pos.x;
-		pos.x = pos.y;
-		pos.y = temp;
-	}
 
-	if (pos.y >= border[side][0] && pos.y <= border[side][1]) {
+	if (pos[!side] >= border[!side][0] && pos[!side] <= border[!side][1]) {
+		posV.x = pos[0];
+		posV.y = pos[1];
+
 		return true;
 	}
 
