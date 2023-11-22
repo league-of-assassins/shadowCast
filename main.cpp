@@ -118,12 +118,9 @@ void shadowCast::objects() {
 	float h, v, m, b;
 
 	for (int i = 0; i < wallTotal; i++) {
-		findSlope(wallPos[i][0], wallPos[i][1], h, v, m, b);
-
 		for (int n = 0; n < 2; n++) {
 
-			h *= -1;
-			v *= -1;
+			findSlope(wallPos[i][!n], wallPos[i][n], h, v, m, b);
 
 			for (int j = 0; j < 2; j++) {
 
@@ -252,7 +249,7 @@ void shadowCast::findCorner(Vector2f pointPos[pointsTotal], Vector2f wallBorderP
 				}
 			}
 
-			else {
+			else if (wallSide[0][0] != wallSide[1][0]) {
 				midEnabled = true;
 			}
 		}
@@ -269,8 +266,6 @@ void shadowCast::findCorner(Vector2f pointPos[pointsTotal], Vector2f wallBorderP
 	}
 
 	if (midEnabled) {
-
-		///////////// BROKEEEEEEEEEEEEEN /////////////
 
 		point[0][!side] = border[!side][!wallSide[0][1]];
 		point[0][side] = border[side][!wallSide[1][1]];
@@ -300,7 +295,6 @@ void shadowCast::shadowMain() {
 	for (int i = 0; i < wallTotal; i++) {
 
 		//---FIND POINTS 6, 2 (OUTER)---//
-
 		for (int p = 0; p < 2; p++) {
 
 			findSlope(mousePos, shadowPos[i][p], h, v, m, b);
@@ -308,7 +302,7 @@ void shadowCast::shadowMain() {
 			for (int j = 0; j < 2; j++) {
 				if (findBorderIntersection(shadowPos[i][6 - (p * 4)], h, v, m, b, j, pointSide[p])) break;
 			}
-		}
+					}
 
 
 		//---FIND POINTS 5, 3 (INNER), 4 (MID)---//
