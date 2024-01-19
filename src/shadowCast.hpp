@@ -24,7 +24,7 @@ private:
 	vector<Vector2i> fixedBorderSide;
 
 
-	float border[2][2] = { { 0, 800 }, { 0, 800 } };
+	float border[2][2];
 
 
 	float radian = 3.14 / 180;
@@ -36,7 +36,7 @@ private:
 
 public:
 
-	void initShadowBorder(RenderWindow& window, float marginTop, float marginRight, float marginBottom, float marginLeft);
+	void initShadowBorder(float topBorder, float rightBorder, float bottomBorder, float leftBorder);
 
 	void drawShadows(RenderWindow& window);
 
@@ -45,6 +45,8 @@ public:
 	void removeShadow(int removeNo);
 
 	void updateShadows(Vector2f basePos);
+
+	shadowCast();
 
 private:
 

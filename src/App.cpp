@@ -15,7 +15,7 @@ App::App() {
 
 	setWindow();
 
-	sc.initShadowBorder(window, 50, 50, 50, 50);
+	//sc.initShadowBorder(50, width - 50, height - 50, 50);
 
 	sc.addShadow(Vector2f(120, 130), Vector2f(350, 315));
 

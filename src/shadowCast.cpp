@@ -1,19 +1,23 @@
 
 #include "shadowCast.hpp"
 
-void shadowCast::initShadowBorder(RenderWindow& window, float marginTop = 0, float marginRight = 0, float marginBottom = 0, float marginLeft = 0) {
+shadowCast::shadowCast() {
+	initShadowBorder(0, 800, 800, 0);
+}
+
+void shadowCast::initShadowBorder(float topBorder, float rightBorder, float bottomBorder, float leftBorder) {
 
 
-	border[0][0] = marginLeft;
-	border[0][1] = window.getSize().x - marginRight;
-	border[1][0] = marginTop;
-	border[1][1] = window.getSize().y - marginBottom;
+	border[0][0] = leftBorder;
+	border[0][1] = rightBorder;
+	border[1][0] = topBorder;
+	border[1][1] = bottomBorder;
 
 	borderCube.setFillColor(Color::Black);
 	borderCube.setPosition(Vector2f(border[0][0], border[1][0]));
 	borderCube.setSize(Vector2f(border[0][1] - border[0][0], border[1][1] - border[1][0]));
 	borderCube.setOutlineColor(Color::Red);
-	borderCube.setOutlineThickness(1);
+	borderCube.setOutlineThickness(-1);
 }
 
 
