@@ -23,11 +23,11 @@ private:
 	//2 start, end
 	vector<Vector2i> fixedBorderSide;
 
-
+	//x, y, min, max
 	float border[2][2];
 
 
-	float radian = 3.14 / 180;
+	const float radian = 3.14 / 180;
 
 	bool undefined = false;
 
@@ -44,11 +44,17 @@ public:
 
 	void removeShadow(int removeNo);
 
+	void changeShadowPos(Vector2f startPos, Vector2f endPos, int changeNo);
+
 	void updateShadows(Vector2f basePos);
 
 	shadowCast();
 
 private:
+
+	void setShadowFixedPos(Vector2f& startPos, Vector2f& endPos, int No);
+
+	void fixedShadowPosErrorCatch(Vector2f& StartPos, Vector2f& EndPos, int No);
 
 	int findSide(float s);
 

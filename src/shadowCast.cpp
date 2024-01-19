@@ -1,13 +1,27 @@
 
+
 #include "shadowCast.hpp"
+
 
 shadowCast::shadowCast() {
 	initShadowBorder(0, 800, 800, 0);
 }
 
+
 void shadowCast::initShadowBorder(float topBorder, float rightBorder, float bottomBorder, float leftBorder) {
 
+	//ERROR CATCHING
+	if (leftBorder >= rightBorder) { 
+		leftBorder = 0; rightBorder = 800;
+		cout << "\n shadowCast.cpp: Left border position cant be greater than right. Reverted to default";
+	}
 
+	if (topBorder >= bottomBorder) {
+		topBorder = 0; bottomBorder = 800;
+		cout << "\n shadowCast.cpp: top border position cant be greater than bottom. Reverted to default";
+	}
+
+	//SET
 	border[0][0] = leftBorder;
 	border[0][1] = rightBorder;
 	border[1][0] = topBorder;
@@ -21,7 +35,6 @@ void shadowCast::initShadowBorder(float topBorder, float rightBorder, float bott
 }
 
 
-
 void shadowCast::drawShadows(RenderWindow& window) {
 	window.draw(borderCube);
 
@@ -31,9 +44,10 @@ void shadowCast::drawShadows(RenderWindow& window) {
 }
 
 
-
 void shadowCast::addShadow(Vector2f startPos, Vector2f endPos, Color shadowColor = Color::White) {
-
+	
+	fixedShadowPosErrorCatch(startPos, endPos, shadowTotal);
+	
 	//SHADOW
 
 	for (int i = 0; i < 7; i++) {
@@ -43,15 +57,8 @@ void shadowCast::addShadow(Vector2f startPos, Vector2f endPos, Color shadowColor
 	shadow.push_back(ConvexShape(7));
 	shadow[shadowTotal].setFillColor(shadowColor);
 
-	shadowPos[shadowTotal * 7] = startPos;
-	shadowPos[shadowTotal * 7 + 1] = endPos;
 
-	for (int j = 0; j < 2; j++) {
-		shadow[shadowTotal].setPoint(j, shadowPos[shadowTotal * 7 + j]);
-	}
-
-
-	//WALL
+	//FIXED BORDER POINTS
 
 	fixedBorderPos.push_back(Vector2f());
 	fixedBorderPos.push_back(Vector2f());
@@ -59,27 +66,87 @@ void shadowCast::addShadow(Vector2f startPos, Vector2f endPos, Color shadowColor
 	fixedBorderSide.push_back(Vector2i());
 	fixedBorderSide.push_back(Vector2i());
 
-	//FIND WALL BORDER POINTS
-	float h, v, m, b;
-
-	for (int n = 0; n < 2; n++) {
-
-		findSlope(shadowPos[shadowTotal * 7 + !n], shadowPos[shadowTotal * 7 + n], h, v, m, b);
-
-		for (int j = 0; j < 2; j++) {
-
-			if (findBorderIntersection(fixedBorderPos[shadowTotal * 2 + n], fixedBorderSide[shadowTotal * 2 + n], h, v, m, b, j)) break;
-		}
-	}
+	setShadowFixedPos(startPos, endPos, shadowTotal);
 
 	shadowTotal++;
 }
 
 
+void shadowCast::changeShadowPos(Vector2f startPos, Vector2f endPos, int changeNo) {
+	
+	if (shadowTotal > 0 && changeNo < shadowTotal && changeNo >= 0) {
+
+		setShadowFixedPos(startPos, endPos, changeNo);
+	}
+
+	else {
+		cout << "\n\n shadowCast.cpp: changeNo is out of scope";
+	}
+}
+
+
+void shadowCast::setShadowFixedPos(Vector2f& startPos, Vector2f& endPos, int No) {
+
+	fixedShadowPosErrorCatch(startPos, endPos, No);
+
+	shadowPos[No * 7] = startPos;
+	shadowPos[No * 7 + 1] = endPos;
+
+	for (int j = 0; j < 2; j++) {
+		shadow[No].setPoint(j, shadowPos[No * 7 + j]);
+	}
+
+
+	//FIND FIXED BORDER POINTS
+	float h, v, m, b;
+
+	for (int n = 0; n < 2; n++) {
+
+		findSlope(shadowPos[No * 7 + !n], shadowPos[No * 7 + n], h, v, m, b);
+
+		for (int j = 0; j < 2; j++) {
+
+			if (findBorderIntersection(fixedBorderPos[No * 2 + n], fixedBorderSide[No * 2 + n], h, v, m, b, j)) break;
+		}
+	}
+}
+
+
+void shadowCast::fixedShadowPosErrorCatch(Vector2f& StartPos, Vector2f& EndPos, int No) {
+
+	float pos[2][2] = {
+		{StartPos.x, StartPos.y},
+		{EndPos.x, EndPos.y}
+	};
+
+	string whichPos[2] = { "start", "end" };
+	string side[2][2] = { {"x", "y"}, { "lower", "greater" } };
+
+	for (int n = 0; n < 2; n++) {
+		for (int i = 0; i < 2; i++) {
+			if (pos[n][i] <= border[i][0]) {
+				pos[n][i] = border[i][0] + 1;
+				cout << "\n\n Warning: shadow[" << No << "] " << whichPos[n] << "Pos." << side[0][i] << " is " << side[1][0] << " than border. It was fixed to border";
+			}
+
+			if (pos[n][i] >= border[i][1]) {
+				pos[n][i] = border[i][1] - 1;
+				cout << "\n\n Warning: shadow[" << No << "] " << whichPos[n] << "Pos." << side[0][i] << " is " << side[1][1] << " than border. It was fixed to border";
+			}
+		}
+	}
+
+	StartPos.x = pos[0][0];
+	StartPos.y = pos[0][1];
+
+	EndPos.x = pos[1][0];
+	EndPos.y = pos[1][1];
+}
+
 
 void shadowCast::removeShadow(int removeNo) {
 
-	if (shadowTotal > 0) {
+	if (shadowTotal > 0 && removeNo < shadowTotal && removeNo >= 0) {
 		for (int i = 0; i < 7; i++) {
 			shadowPos.erase(shadowPos.begin() + removeNo * 7);
 		}
@@ -93,7 +160,12 @@ void shadowCast::removeShadow(int removeNo) {
 
 		shadowTotal--;
 	}
+
+	else {
+		cout << "\n\n shadowCast.cpp: removeNo is out of scope";
+	}
 }
+
 
 
 
@@ -102,7 +174,6 @@ int shadowCast::findSide(float s) {
 	if (s < 0) return 1;
 	return 0;
 }
-
 
 
 void shadowCast::findSlope(Vector2f posA, Vector2f posB, float& h, float& v, float& m, float& b) {
@@ -121,7 +192,6 @@ void shadowCast::findSlope(Vector2f posA, Vector2f posB, float& h, float& v, flo
 		b = posB.x;
 	}
 }
-
 
 
 bool shadowCast::findBorderIntersection(Vector2f& posV, Vector2i& borderSide, float h, float v, float m, float b, int side) {
@@ -157,7 +227,6 @@ bool shadowCast::findBorderIntersection(Vector2f& posV, Vector2i& borderSide, fl
 
 	return false;
 }
-
 
 
 void shadowCast::findCorner(vector<Vector2f>& ShadowPos, vector<Vector2f>& FixedBorderPos, vector<Vector2i>& PointBorderSide, vector<Vector2i>& FixedBorderSide, int m) {
@@ -227,7 +296,6 @@ void shadowCast::findCorner(vector<Vector2f>& ShadowPos, vector<Vector2f>& Fixed
 }
 
 
-
 void shadowCast::updateShadows(Vector2f basePos) {
 
 	//	POINT PARENTS:
@@ -258,7 +326,6 @@ void shadowCast::updateShadows(Vector2f basePos) {
 
 	setPositions();
 }
-
 
 
 void shadowCast::setPositions() {

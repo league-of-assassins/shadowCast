@@ -17,7 +17,9 @@ private:
 	Vector2f mousePos;
 
 
-	shadowCast sc;
+	shadowCast shadowObj;
+
+	bool change = true;
 
 
 
@@ -29,8 +31,6 @@ private:
 	void displays();
 
 	void getMousePos();
-
-	void general();
 
 public:
 

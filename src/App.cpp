@@ -11,30 +11,6 @@ void App::setWindow() {
 }
 
 
-App::App() {
-
-	setWindow();
-
-	//sc.initShadowBorder(50, width - 50, height - 50, 50);
-
-	sc.addShadow(Vector2f(120, 130), Vector2f(350, 315));
-
-	sc.addShadow(Vector2f(500, 540), Vector2f(590, 620));
-
-	sc.addShadow(Vector2f(450, 700), Vector2f(520, 500), Color::Cyan);
-
-	sc.removeShadow(1);
-
-	while (window.isOpen())
-	{
-		events();
-
-		general();
-
-		displays();
-	}
-}
-
 void App::events() {
 	while (window.pollEvent(event))
 	{
@@ -49,28 +25,52 @@ void App::events() {
 	}
 }
 
+
+App::App() {
+
+	setWindow();
+
+	shadowObj.initShadowBorder(50, width - 50, height - 50, 50);
+
+	shadowObj.addShadow(Vector2f(120, 130), Vector2f(350, 500));
+
+	shadowObj.addShadow(Vector2f(500, 540), Vector2f(590, 620));
+
+	shadowObj.addShadow(Vector2f(450, 700), Vector2f(520, 500), Color::Cyan);
+
+	shadowObj.removeShadow(1);
+
+	while (window.isOpen())
+	{
+		events();
+
+		getMousePos();
+
+		if (change) { shadowObj.changeShadowPos(Vector2f(400, 130), Vector2f(350, 315), 0); change = false; }
+
+		shadowObj.updateShadows(mousePos);
+
+		displays();
+	}
+}
+
+
 void App::displays() {
 
 	window.clear(Color::Black);
 
 
-	sc.drawShadows(window);
+	shadowObj.drawShadows(window);
 	
 
 	window.display();
 }
+
 
 void App::getMousePos() {
 
 	//FIND MOUSE POS
 	mousePos.x = Mouse::getPosition().x - windowGap.x;
 	mousePos.y = Mouse::getPosition().y - windowGap.y;
-
 }
 
-void App::general() {
-
-	getMousePos();
-
-	sc.updateShadows(mousePos);
-}
