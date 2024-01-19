@@ -114,7 +114,7 @@ void shadowCast::findSlope(Vector2f posA, Vector2f posB, float& h, float& v, flo
 	b = posA.y - posA.x * m;
 
 
-	if (abs(h) < 1) {
+	if (h == 0) {
 		undefined = true;
 
 		m = 0;
@@ -139,7 +139,7 @@ bool shadowCast::findBorderIntersection(Vector2f& posV, Vector2i& borderSide, fl
 	pos[side] = border[side][borderSide.y];
 
 	if (side == 0 || undefined) {
-		if (undefined) undefined = false;
+		undefined = false;
 		pos[!side] = pos[side] * m + b;
 	}
 
@@ -155,7 +155,7 @@ bool shadowCast::findBorderIntersection(Vector2f& posV, Vector2i& borderSide, fl
 		return true;
 	}
 
-	else return false;
+	return false;
 }
 
 
