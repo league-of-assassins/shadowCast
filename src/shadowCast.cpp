@@ -1,5 +1,4 @@
 
-
 #include "shadowCast.hpp"
 
 
@@ -13,23 +12,23 @@ void shadowCast::initShadowBorder(float topBorder, float rightBorder, float bott
 	//ERROR CATCHING
 	if (leftBorder >= rightBorder) { 
 		leftBorder = 0; rightBorder = 800;
-		cout << "\n shadowCast.cpp: Left border position cant be greater than right. Reverted to default";
+		cerr << "\n shadowCast.cpp: Left border position cant be greater than right. Reverted to default";
 	}
 
 	if (topBorder >= bottomBorder) {
 		topBorder = 0; bottomBorder = 800;
-		cout << "\n shadowCast.cpp: top border position cant be greater than bottom. Reverted to default";
+		cerr << "\n shadowCast.cpp: top border position cant be greater than bottom. Reverted to default";
 	}
 
 	//SET
-	border[0][0] = leftBorder;
-	border[0][1] = rightBorder;
-	border[1][0] = topBorder;
-	border[1][1] = bottomBorder;
+	border[AXIS_X][BORDER_MIN] = leftBorder;
+	border[AXIS_X][BORDER_MAX] = rightBorder;
+	border[AXIS_Y][BORDER_MIN] = topBorder;
+	border[AXIS_Y][BORDER_MAX] = bottomBorder;
 
 	borderCube.setFillColor(Color::Black);
-	borderCube.setPosition(Vector2f(border[0][0], border[1][0]));
-	borderCube.setSize(Vector2f(border[0][1] - border[0][0], border[1][1] - border[1][0]));
+	borderCube.setPosition(Vector2f(border[AXIS_X][BORDER_MIN], border[AXIS_Y][BORDER_MIN]));
+	borderCube.setSize(Vector2f(border[AXIS_X][BORDER_MAX] - border[AXIS_X][BORDER_MIN], border[AXIS_Y][BORDER_MAX] - border[AXIS_Y][BORDER_MIN]));
 	borderCube.setOutlineColor(Color::Red);
 	borderCube.setOutlineThickness(-1);
 }
@@ -44,134 +43,122 @@ void shadowCast::drawShadows(RenderWindow& window) {
 }
 
 
-void shadowCast::addShadow(Vector2f startPos, Vector2f endPos, Color shadowColor = Color::White) {
-	
-	fixedShadowPosErrorCatch(startPos, endPos, shadowTotal);
-	
-	//SHADOW
+void shadowCast::addShadow(Vector2f startPoint, Vector2f endPoint, Color shadowColor = Color::White) {
 
-	for (int i = 0; i < 7; i++) {
-		shadowPos.push_back(Vector2f());
+	for (int i = 0; i < POINT_FIXED_TOTAL; i++) {
+		fixedPoint.push_back(Vector2f());
+		fixedBorderHitPos.push_back(Vector2f());
+		fixedBorderHitSide.push_back(Vector2i());
 	}
 
-	shadow.push_back(ConvexShape(7));
+	shadow.push_back(ConvexShape(POINT_TOTAL));
 	shadow[shadowTotal].setFillColor(shadowColor);
 
-
-	//FIXED BORDER POINTS
-
-	fixedBorderPos.push_back(Vector2f());
-	fixedBorderPos.push_back(Vector2f());
-
-	fixedBorderSide.push_back(Vector2i());
-	fixedBorderSide.push_back(Vector2i());
-
-	setShadowFixedPos(startPos, endPos, shadowTotal);
+	setFixedPoint(startPoint, endPoint, shadowTotal);
 
 	shadowTotal++;
 }
 
 
-void shadowCast::changeShadowPos(Vector2f startPos, Vector2f endPos, int changeNo) {
+void shadowCast::changeShadowPos(Vector2f startPoint, Vector2f endPoint, int changeNo) {
 	
 	if (shadowTotal > 0 && changeNo < shadowTotal && changeNo >= 0) {
 
-		setShadowFixedPos(startPos, endPos, changeNo);
+		setFixedPoint(startPoint, endPoint, changeNo);
 	}
 
 	else {
-		cout << "\n\n shadowCast.cpp: changeNo is out of scope";
+		cerr << "\n\n shadowCast.cpp: changeNo is out of scope";
 	}
 }
 
 
-void shadowCast::setShadowFixedPos(Vector2f& startPos, Vector2f& endPos, int No) {
+void shadowCast::setFixedPoint(Vector2f& startPoint, Vector2f& endPoint, int No) {
 
-	fixedShadowPosErrorCatch(startPos, endPos, No);
+	fixedPointErrorCatch(startPoint, endPoint, No);
 
-	shadowPos[No * 7] = startPos;
-	shadowPos[No * 7 + 1] = endPos;
+	fixedPoint[No * POINT_FIXED_TOTAL + POINT_START] = startPoint;
+	fixedPoint[No * POINT_FIXED_TOTAL + POINT_END] = endPoint;
 
-	for (int j = 0; j < 2; j++) {
-		shadow[No].setPoint(j, shadowPos[No * 7 + j]);
+	for (int j = 0; j < POINT_FIXED_TOTAL; j++) {
+		shadow[No].setPoint(j, fixedPoint[No * POINT_FIXED_TOTAL + j]);
 	}
 
 
 	//FIND FIXED BORDER POINTS
 	float h, v, m, b;
 
-	for (int n = 0; n < 2; n++) {
+	for (int n = 0; n < POINT_FIXED_TOTAL; n++) {
 
-		findSlope(shadowPos[No * 7 + !n], shadowPos[No * 7 + n], h, v, m, b);
+		findSlope(fixedPoint[No * POINT_FIXED_TOTAL + !n], fixedPoint[No * POINT_FIXED_TOTAL + n], h, v, m, b);
 
-		for (int j = 0; j < 2; j++) {
+		for (int j = 0; j < AXIS_TOTAL; j++) {
 
-			if (findBorderIntersection(fixedBorderPos[No * 2 + n], fixedBorderSide[No * 2 + n], h, v, m, b, j)) break;
+			if (findBorderIntersection(fixedBorderHitPos[No * POINT_FIXED_TOTAL + n], fixedBorderHitSide[No * POINT_FIXED_TOTAL + n], h, v, m, b, j)) break;
 		}
 	}
 }
 
 
-void shadowCast::fixedShadowPosErrorCatch(Vector2f& StartPos, Vector2f& EndPos, int No) {
+void shadowCast::fixedPointErrorCatch(Vector2f& startPoint, Vector2f& endPoint, int No) {
 
 	float pos[2][2] = {
-		{StartPos.x, StartPos.y},
-		{EndPos.x, EndPos.y}
+		{startPoint.x, startPoint.y},
+		{endPoint.x, endPoint.y}
 	};
 
 	string whichPos[2] = { "start", "end" };
-	string side[2][2] = { {"x", "y"}, { "lower", "greater" } };
+	string axis[2][2] = { {"x", "y"}, { "lower", "greater" } };
 
-	for (int n = 0; n < 2; n++) {
-		for (int i = 0; i < 2; i++) {
-			if (pos[n][i] <= border[i][0]) {
-				pos[n][i] = border[i][0] + 1;
-				cout << "\n\n Warning: shadow[" << No << "] " << whichPos[n] << "Pos." << side[0][i] << " is " << side[1][0] << " than border. It was fixed to border";
+	for (int n = 0; n < POINT_FIXED_TOTAL; n++) {
+		for (int i = 0; i < AXIS_TOTAL; i++) {
+			if (pos[n][i] <= border[i][BORDER_MIN]) {
+				pos[n][i] = border[i][BORDER_MIN] + 1;
+				cerr << "\n\n Warning: shadow[" << No << "] " << whichPos[n] << "Pos." << axis[0][i] << " is " << axis[1][BORDER_MIN] << " than border. It was fixed to border";
 			}
 
-			if (pos[n][i] >= border[i][1]) {
-				pos[n][i] = border[i][1] - 1;
-				cout << "\n\n Warning: shadow[" << No << "] " << whichPos[n] << "Pos." << side[0][i] << " is " << side[1][1] << " than border. It was fixed to border";
+			if (pos[n][i] >= border[i][BORDER_MAX]) {
+				pos[n][i] = border[i][BORDER_MAX] - 1;
+				cerr << "\n\n Warning: shadow[" << No << "] " << whichPos[n] << "Pos." << axis[0][i] << " is " << axis[1][BORDER_MAX] << " than border. It was fixed to border";
 			}
 		}
 	}
 
-	StartPos.x = pos[0][0];
-	StartPos.y = pos[0][1];
+	startPoint.x = pos[POINT_START][AXIS_X];
+	startPoint.y = pos[POINT_START][AXIS_Y];
 
-	EndPos.x = pos[1][0];
-	EndPos.y = pos[1][1];
+	endPoint.x = pos[POINT_END][AXIS_X];
+	endPoint.y = pos[POINT_END][AXIS_Y];
 }
 
 
 void shadowCast::removeShadow(int removeNo) {
 
 	if (shadowTotal > 0 && removeNo < shadowTotal && removeNo >= 0) {
-		for (int i = 0; i < 7; i++) {
-			shadowPos.erase(shadowPos.begin() + removeNo * 7);
+
+		for (int i = 0; i < POINT_FIXED_TOTAL; i++) {
+			fixedPoint.erase(fixedPoint.begin() + removeNo * POINT_FIXED_TOTAL);
+			fixedBorderHitPos.erase(fixedBorderHitPos.begin() + removeNo * POINT_FIXED_TOTAL);
+			fixedBorderHitSide.erase(fixedBorderHitSide.begin() + removeNo * POINT_FIXED_TOTAL);
 		}
 
 		shadow.erase(shadow.begin() + removeNo);
 
-		for (int i = 0; i < 2; i++) {
-			fixedBorderPos.erase(fixedBorderPos.begin() + removeNo * 2);
-			fixedBorderSide.erase(fixedBorderSide.begin() + removeNo * 2);
-		}
 
 		shadowTotal--;
 	}
 
 	else {
-		cout << "\n\n shadowCast.cpp: removeNo is out of scope";
+		cerr << "\n\n shadowCast.cpp: removeNo is out of scope";
 	}
 }
 
 
 
 
-int shadowCast::findSide(float s) {
+int shadowCast::findSide(float distance) {
 
-	if (s < 0) return 1;
+	if (distance < 0) return 1;
 	return 0;
 }
 
@@ -181,7 +168,6 @@ void shadowCast::findSlope(Vector2f posA, Vector2f posB, float& h, float& v, flo
 	v = posA.y - posB.y;
 
 	m = v / h;
-
 	b = posA.y - posA.x * m;
 
 
@@ -189,38 +175,39 @@ void shadowCast::findSlope(Vector2f posA, Vector2f posB, float& h, float& v, flo
 		undefined = true;
 
 		m = 0;
-		b = posB.x;
+		b = posA.x;
 	}
 }
 
 
-bool shadowCast::findBorderIntersection(Vector2f& posV, Vector2i& borderSide, float h, float v, float m, float b, int side) {
+bool shadowCast::findBorderIntersection(Vector2f& posV, Vector2i& borderSide, float h, float v, float m, float b, int axis) {
 
 	float pos[2] = { posV.x, posV.y };
 
-	float distance[2] = { h, v };
+	float distances[2] = { h, v };
 
-	if (undefined) side = 1;
+	if (undefined) axis = AXIS_Y;
 
 
-	borderSide.x = side;
-	borderSide.y = findSide(distance[side]);
+	borderSide.x = axis;
+	borderSide.y = findSide(distances[axis]);
 
-	pos[side] = border[side][borderSide.y];
 
-	if (side == 0 || undefined) {
+	pos[axis] = border[axis][borderSide.y];
+
+	if (axis == AXIS_X || undefined) {
 		undefined = false;
-		pos[!side] = pos[side] * m + b;
+		pos[!axis] = pos[axis] * m + b;
 	}
 
 	else {
-		pos[!side] = (pos[side] - b) / m;
+		pos[!axis] = (pos[axis] - b) / m;
 	}
 
 
-	if (pos[!side] >= border[!side][0] && pos[!side] <= border[!side][1]) {
-		posV.x = pos[0];
-		posV.y = pos[1];
+	if (pos[!axis] >= border[!axis][BORDER_MIN] && pos[!axis] <= border[!axis][BORDER_MAX]) {
+		posV.x = pos[AXIS_X];
+		posV.y = pos[AXIS_Y];
 
 		return true;
 	}
@@ -229,69 +216,67 @@ bool shadowCast::findBorderIntersection(Vector2f& posV, Vector2i& borderSide, fl
 }
 
 
-void shadowCast::findCorner(vector<Vector2f>& ShadowPos, vector<Vector2f>& FixedBorderPos, vector<Vector2i>& PointBorderSide, vector<Vector2i>& FixedBorderSide, int m) {
+void shadowCast::findCorners(Vector2f outerPoint[2], Vector2f innerPoint[2], Vector2f& midPoint, vector<Vector2i>& outerBorderHitSide, int m) {
 
-	float outerPoint[2][2] = {
-		{ShadowPos[m * 7 + 6].x, ShadowPos[m * 7 + 6].y},
-		{ShadowPos[m * 7 + 2].x, ShadowPos[m * 7 + 2].y}
+	float outerPointArr[2][2] = {
+		{outerPoint[POINT_START].x, outerPoint[POINT_START].y},
+		{outerPoint[POINT_END].x, outerPoint[POINT_END].y}
 	};
 
-	float fixedPoint[2][2] = {
-		{FixedBorderPos[m * 2].x, FixedBorderPos[m * 2].y},
-		{FixedBorderPos[m * 2 + 1].x, FixedBorderPos[m * 2 + 1].y}
+	float fixedBorderIntersectPosArr[2][2] = {
+		{fixedBorderHitPos[m * POINT_FIXED_TOTAL + POINT_START].x, fixedBorderHitPos[m * POINT_FIXED_TOTAL + POINT_START].y},
+		{fixedBorderHitPos[m * POINT_FIXED_TOTAL + POINT_END].x, fixedBorderHitPos[m * POINT_FIXED_TOTAL + POINT_END].y}
 	};
 
-	int side, temp, count = 0, k = 5;
+	int axis, temp, count = 0;
 
 	bool midEnabled = false;
 
 
 	for (int i = 0; i < 2; i++) {
 
-		if (!(PointBorderSide[0].x == PointBorderSide[1].x &&
-			PointBorderSide[0].y == PointBorderSide[1].y)) {
+		if (!(outerBorderHitSide[POINT_START].x == outerBorderHitSide[POINT_END].x &&
+			outerBorderHitSide[POINT_START].y == outerBorderHitSide[POINT_END].y)) {
 
-			side = FixedBorderSide[m * 2 + i].x;
+			axis = fixedBorderHitSide[m * POINT_FIXED_TOTAL + i].x;
 
-			if (PointBorderSide[i].x == FixedBorderSide[m * 2 + i].x) {
-				if (PointBorderSide[i].y == FixedBorderSide[m * 2 + i].y) {
+			if (outerBorderHitSide[i].x == fixedBorderHitSide[m * POINT_FIXED_TOTAL + i].x) {
+				if (outerBorderHitSide[i].y == fixedBorderHitSide[m * POINT_FIXED_TOTAL + i].y) {
 
-					if (outerPoint[i][!side] > fixedPoint[i][!side]) temp = 1;
+					if (outerPointArr[i][!axis] > fixedBorderIntersectPosArr[i][!axis]) temp = 1;
 					else temp = 0;
 
-					outerPoint[i][!side] = border[!side][temp];
+					outerPointArr[i][!axis] = border[!axis][temp];
 
 					count++;
 				}
 			}
 
-			else if (FixedBorderSide[m * 2].x != FixedBorderSide[m * 2 + 1].x) {
+			else if (fixedBorderHitSide[m * POINT_FIXED_TOTAL + POINT_START].x != fixedBorderHitSide[m * POINT_FIXED_TOTAL + POINT_END].x) {
 				midEnabled = true;
 			}
 		}
 
-		ShadowPos[m * 7 + k].x = outerPoint[i][0];
-		ShadowPos[m * 7 + k].y = outerPoint[i][1];
-
-		k = 3;
+		innerPoint[i].x = outerPointArr[i][AXIS_X];
+		innerPoint[i].y = outerPointArr[i][AXIS_Y];
 	}
 
 
-	if (count == 2 && FixedBorderSide[m * 2].x != FixedBorderSide[m * 2 + 1].x && ShadowPos[m * 7 + 3] != ShadowPos[m * 7 + 5]) {
+	if (count == 2 && fixedBorderHitSide[m * POINT_FIXED_TOTAL + POINT_START].x != fixedBorderHitSide[m * POINT_FIXED_TOTAL + POINT_END].x && innerPoint[POINT_START] != innerPoint[POINT_END]) {
 		midEnabled = true;
 	}
 
 	if (midEnabled) {
 
-		outerPoint[0][!side] = border[!side][!FixedBorderSide[m * 2].y];
-		outerPoint[0][side] = border[side][!FixedBorderSide[m * 2 + 1].y];
+		outerPointArr[POINT_START][!axis] = border[!axis][!fixedBorderHitSide[m * POINT_FIXED_TOTAL + POINT_START].y];
+		outerPointArr[POINT_START][axis] = border[axis][!fixedBorderHitSide[m * POINT_FIXED_TOTAL + POINT_END].y];
 
-		ShadowPos[m * 7 + 4].x = outerPoint[0][0];
-		ShadowPos[m * 7 + 4].y = outerPoint[0][1];
+		midPoint.x = outerPointArr[POINT_START][AXIS_X];
+		midPoint.y = outerPointArr[POINT_START][AXIS_Y];
 	}
 
 	else {
-		ShadowPos[m * 7 + 4] = ShadowPos[m * 7 + 3];
+		midPoint = innerPoint[POINT_START];
 	}
 }
 
@@ -304,36 +289,37 @@ void shadowCast::updateShadows(Vector2f basePos) {
 
 	float h, v, m, b;
 
-	vector<Vector2i> pointBorderSide = { Vector2i(), Vector2i() };
+	Vector2f outerPoint[POINT_FIXED_TOTAL];
+	Vector2f innerPoint[POINT_FIXED_TOTAL];
+	Vector2f midPoint;
+
+	vector<Vector2i> outerBorderHitSide = { Vector2i(), Vector2i() };
+
 
 	for (int i = 0; i < shadowTotal; i++) {
 
 		//---FIND POINTS 6, 2 (OUTER)---//
-		for (int n = 0; n < 2; n++) {
+		for (int n = 0; n < POINT_FIXED_TOTAL; n++) {
 
-			findSlope(basePos, shadowPos[i * 7 + n], h, v, m, b);
+			findSlope(basePos, fixedPoint[i * POINT_FIXED_TOTAL + n], h, v, m, b);
 
-			for (int j = 0; j < 2; j++) {
-				if (findBorderIntersection(shadowPos[i * 7 + 6 - (n * 4)], pointBorderSide[n], h, v, m, b, j)) break;
+			for (int j = 0; j < AXIS_TOTAL; j++) {
+				if (findBorderIntersection(outerPoint[n], outerBorderHitSide[n], h, v, m, b, j)) break;
 			}
 		}
 
 
 		//---FIND POINTS 5, 3 (INNER), 4 (MID)---//
 
-		findCorner(shadowPos, fixedBorderPos, pointBorderSide, fixedBorderSide, i);
-	}
-
-	setPositions();
-}
+		findCorners(outerPoint, innerPoint, midPoint, outerBorderHitSide, i);
 
 
-void shadowCast::setPositions() {
-
-	//SHADOW POINTS
-	for (int i = 0; i < shadowTotal; i++) {
-		for (int j = 2; j < 7; j++) {
-			shadow[i].setPoint(j, shadowPos[i * 7 + j]);
+		//SET POINTS
+		for (int j = 0; j < POINT_FIXED_TOTAL; j++) {
+			shadow[i].setPoint(OUTER_POINT[j], outerPoint[j]);
+			shadow[i].setPoint(INNER_POINT[j], innerPoint[j]);
 		}
+
+		shadow[i].setPoint(MID_POINT, midPoint);
 	}
 }
