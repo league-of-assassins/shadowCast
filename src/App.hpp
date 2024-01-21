@@ -8,13 +8,13 @@ private:
 	float width = 800;
 	float height = 800;
 
-	Vector2f windowGap;
+	sf::Vector2f windowGap;
 
-	RenderWindow window;
+	sf::RenderWindow window;
 
-	Event event;
+	sf::Event event;
 
-	Vector2f mousePos;
+	sf::Vector2f mousePos;
 
 
 	shadowCast shadowObj;

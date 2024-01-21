@@ -2,65 +2,67 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
-using namespace std;
-using namespace sf;
-
-
 
 
 
 class shadowCast {
-private:
-
-	enum Points {
-		POINT_START = 0,
-		POINT_END = 1,
-		POINT_TOTAL = 7,
-		POINT_FIXED_TOTAL = 2
-	};
-
-	enum BorderSide {
-		BORDER_MIN = 0,
-		BORDER_MAX = 1,
-	};
-
-	enum AxisSide {
-		AXIS_X = 0,
-		AXIS_Y = 1,
-		AXIS_TOTAL
-	};
 
 public:
 
 	//7 Points
-	vector<ConvexShape> shadow;
+	std::vector<sf::ConvexShape> shadow;
 
 	//Optional to draw
-	RectangleShape borderCube;
+	sf::RectangleShape borderCube;
+
+
 
 private:
 
-	//2 start, end
-	vector<Vector2f> fixedPoint;
+	enum Parents {
+		PARENT_START = 0,
+		PARENT_END = 1,
+		PARENT_TOTAL = 2
+	};
 
-	//2 start, end
-	vector<Vector2f> fixedBorderHitPos;
+	const int POINT_TOTAL = 7;
 
-	//2 start, end
-	vector<Vector2i> fixedBorderHitSide;
-
-	//x, y, min, max
-	float border[2][2];
-
-	const int FIXED_POINT[POINT_FIXED_TOTAL] = { 0, 1 };
-	const int OUTER_POINT[POINT_FIXED_TOTAL] = { 6, 2 };
-	const int INNER_POINT[POINT_FIXED_TOTAL] = { 5, 3 };
+	const int FIXED_POINT[PARENT_TOTAL] = { 0, 1 };
+	const int OUTER_POINT[PARENT_TOTAL] = { 6, 2 };
+	const int INNER_POINT[PARENT_TOTAL] = { 5, 3 };
 	const int MID_POINT = 4;
+
+	struct ParentPoint {
+		sf::Vector2f fixedPoint;
+		sf::Vector2f fixedBorderHitPos;
+		sf::Vector2i fixedBorderHitSide;
+	};
+
+	//2 parents per shadow: start, end
+	std::vector<ParentPoint> parent;
+
+
+
+	enum AxisSide {
+		AXIS_X = 0,
+		AXIS_Y = 1,
+		AXIS_TOTAL = 2
+	};
+
+	enum BorderExtremum {
+		BORDER_MIN = 0,
+		BORDER_MAX = 1,
+		BORDER_EXTREMUM_TOTAL = 2
+	};
+
+	float border[AXIS_TOTAL][BORDER_EXTREMUM_TOTAL];
+
 
 
 	bool undefined = false;
 
 	int shadowTotal = 0;
+
 
 
 public:
@@ -71,28 +73,28 @@ public:
 
 	void initShadowBorder(float topBorder, float rightBorder, float bottomBorder, float leftBorder);
 
-	void drawShadows(RenderWindow& window);
+	void drawShadows(sf::RenderWindow& window);
 
-	void addShadow(Vector2f startPoint, Vector2f endPoint, Color shadowColor);
+	void addShadow(sf::Vector2f startPoint, sf::Vector2f endPoint, sf::Color shadowColor);
 
 	void removeShadow(int removeNo);
 
-	void changeShadowPos(Vector2f startPoint, Vector2f endPoint, int changeNo);
+	void changeShadowPos(sf::Vector2f startPoint, sf::Vector2f endPoint, int changeNo);
 
-	void updateShadows(Vector2f basePos);
+	void updateShadows(sf::Vector2f basePos);
 
 
 private:
 
-	void setFixedPoint(Vector2f& startPoint, Vector2f& endPoint, int No);
+	void setFixedPoint(sf::Vector2f& startPoint, sf::Vector2f& endPoint, int No);
 
-	void fixedPointErrorCatch(Vector2f& startPoint, Vector2f& endPoint, int No);
+	void fixedPointErrorCatch(sf::Vector2f& startPoint, sf::Vector2f& endPoint, int No);
 
 	int findSide(float distance);
 
-	void findSlope(Vector2f posA, Vector2f posB, float& h, float& v, float& m, float& b);
+	void findSlope(sf::Vector2f posA, sf::Vector2f posB, float& h, float& v, float& m, float& b);
 
-	bool findBorderIntersection(Vector2f& posV, Vector2i& borderIntersectSide, float h, float v, float m, float b, int side);
+	bool findBorderIntersection(sf::Vector2f& posV, sf::Vector2i& borderIntersectSide, float h, float v, float m, float b, int side);
 
-	void findCorners(Vector2f outerPoint[2], Vector2f innerPoint[2], Vector2f& midPoint, vector<Vector2i>& outerBorderHitSide, int m);
+	void findCorners(sf::Vector2f outerPoint[2], sf::Vector2f innerPoint[2], sf::Vector2f& midPoint, sf::Vector2i outerBorderHitSide[2], int m);
 };

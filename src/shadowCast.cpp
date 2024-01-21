@@ -3,6 +3,7 @@
 
 
 shadowCast::shadowCast() {
+
 	initShadowBorder(0, 800, 800, 0);
 }
 
@@ -12,12 +13,12 @@ void shadowCast::initShadowBorder(float topBorder, float rightBorder, float bott
 	//ERROR CATCHING
 	if (leftBorder >= rightBorder) { 
 		leftBorder = 0; rightBorder = 800;
-		cerr << "\n shadowCast.cpp: Left border position cant be greater than right. Reverted to default";
+		std::cerr << "\n shadowCast.cpp: Left border position cant be greater than right. Reverted to default";
 	}
 
 	if (topBorder >= bottomBorder) {
 		topBorder = 0; bottomBorder = 800;
-		cerr << "\n shadowCast.cpp: top border position cant be greater than bottom. Reverted to default";
+		std::cerr << "\n shadowCast.cpp: top border position cant be greater than bottom. Reverted to default";
 	}
 
 	//SET
@@ -26,15 +27,15 @@ void shadowCast::initShadowBorder(float topBorder, float rightBorder, float bott
 	border[AXIS_Y][BORDER_MIN] = topBorder;
 	border[AXIS_Y][BORDER_MAX] = bottomBorder;
 
-	borderCube.setFillColor(Color::Black);
-	borderCube.setPosition(Vector2f(border[AXIS_X][BORDER_MIN], border[AXIS_Y][BORDER_MIN]));
-	borderCube.setSize(Vector2f(border[AXIS_X][BORDER_MAX] - border[AXIS_X][BORDER_MIN], border[AXIS_Y][BORDER_MAX] - border[AXIS_Y][BORDER_MIN]));
-	borderCube.setOutlineColor(Color::Red);
+	borderCube.setFillColor(sf::Color::Black);
+	borderCube.setPosition(sf::Vector2f(border[AXIS_X][BORDER_MIN], border[AXIS_Y][BORDER_MIN]));
+	borderCube.setSize(sf::Vector2f(border[AXIS_X][BORDER_MAX] - border[AXIS_X][BORDER_MIN], border[AXIS_Y][BORDER_MAX] - border[AXIS_Y][BORDER_MIN]));
+	borderCube.setOutlineColor(sf::Color::Red);
 	borderCube.setOutlineThickness(-1);
 }
 
 
-void shadowCast::drawShadows(RenderWindow& window) {
+void shadowCast::drawShadows(sf::RenderWindow& window) {
 	window.draw(borderCube);
 
 	for (int i = 0; i < shadowTotal; i++) {
@@ -43,15 +44,13 @@ void shadowCast::drawShadows(RenderWindow& window) {
 }
 
 
-void shadowCast::addShadow(Vector2f startPoint, Vector2f endPoint, Color shadowColor = Color::White) {
+void shadowCast::addShadow(sf::Vector2f startPoint, sf::Vector2f endPoint, sf::Color shadowColor = sf::Color::White) {
 
-	for (int i = 0; i < POINT_FIXED_TOTAL; i++) {
-		fixedPoint.push_back(Vector2f());
-		fixedBorderHitPos.push_back(Vector2f());
-		fixedBorderHitSide.push_back(Vector2i());
+	for (int i = 0; i < PARENT_TOTAL; i++) {
+		parent.push_back({ sf::Vector2f(), sf::Vector2f(), sf::Vector2i() });
 	}
 
-	shadow.push_back(ConvexShape(POINT_TOTAL));
+	shadow.push_back(sf::ConvexShape(POINT_TOTAL));
 	shadow[shadowTotal].setFillColor(shadowColor);
 
 	setFixedPoint(startPoint, endPoint, shadowTotal);
@@ -60,7 +59,7 @@ void shadowCast::addShadow(Vector2f startPoint, Vector2f endPoint, Color shadowC
 }
 
 
-void shadowCast::changeShadowPos(Vector2f startPoint, Vector2f endPoint, int changeNo) {
+void shadowCast::changeShadowPos(sf::Vector2f startPoint, sf::Vector2f endPoint, int changeNo) {
 	
 	if (shadowTotal > 0 && changeNo < shadowTotal && changeNo >= 0) {
 
@@ -68,67 +67,71 @@ void shadowCast::changeShadowPos(Vector2f startPoint, Vector2f endPoint, int cha
 	}
 
 	else {
-		cerr << "\n\n shadowCast.cpp: changeNo is out of scope";
+		std::cerr << "\n\n shadowCast.cpp: changeNo: " << changeNo << " is out of scope. Range is 0 to " << shadowTotal - 1;
 	}
 }
 
 
-void shadowCast::setFixedPoint(Vector2f& startPoint, Vector2f& endPoint, int No) {
+void shadowCast::setFixedPoint(sf::Vector2f& startPoint, sf::Vector2f& endPoint, int No) {
 
+	//SET FIXED POINTS
 	fixedPointErrorCatch(startPoint, endPoint, No);
 
-	fixedPoint[No * POINT_FIXED_TOTAL + POINT_START] = startPoint;
-	fixedPoint[No * POINT_FIXED_TOTAL + POINT_END] = endPoint;
+	parent[No * PARENT_TOTAL + PARENT_START].fixedPoint = startPoint;
+	parent[No * PARENT_TOTAL + PARENT_END].fixedPoint = endPoint;
 
-	for (int j = 0; j < POINT_FIXED_TOTAL; j++) {
-		shadow[No].setPoint(j, fixedPoint[No * POINT_FIXED_TOTAL + j]);
+	for (int i = 0; i < PARENT_TOTAL; i++) {
+		shadow[No].setPoint(FIXED_POINT[i], parent[No * PARENT_TOTAL + i].fixedPoint);
 	}
 
 
-	//FIND FIXED BORDER POINTS
+	//FIND FIXED BORDER HIT POS AND SIDE
 	float h, v, m, b;
 
-	for (int n = 0; n < POINT_FIXED_TOTAL; n++) {
+	findSlope(parent[No * PARENT_TOTAL + PARENT_END].fixedPoint, parent[No * PARENT_TOTAL + PARENT_START].fixedPoint, h, v, m, b);
 
-		findSlope(fixedPoint[No * POINT_FIXED_TOTAL + !n], fixedPoint[No * POINT_FIXED_TOTAL + n], h, v, m, b);
+	for (int i = 0; i < PARENT_TOTAL; i++) {
 
 		for (int j = 0; j < AXIS_TOTAL; j++) {
 
-			if (findBorderIntersection(fixedBorderHitPos[No * POINT_FIXED_TOTAL + n], fixedBorderHitSide[No * POINT_FIXED_TOTAL + n], h, v, m, b, j)) break;
+			if (findBorderIntersection(parent[No * PARENT_TOTAL + i].fixedBorderHitPos, parent[No * PARENT_TOTAL + i].fixedBorderHitSide, h, v, m, b, j)) break;
 		}
+
+		h *= -1;
+		v *= -1;
 	}
-}
+};
 
 
-void shadowCast::fixedPointErrorCatch(Vector2f& startPoint, Vector2f& endPoint, int No) {
+void shadowCast::fixedPointErrorCatch(sf::Vector2f& startPoint, sf::Vector2f& endPoint, int No) {
 
 	float pos[2][2] = {
 		{startPoint.x, startPoint.y},
 		{endPoint.x, endPoint.y}
 	};
 
-	string whichPos[2] = { "start", "end" };
-	string axis[2][2] = { {"x", "y"}, { "lower", "greater" } };
+	std::string whichPos[2] = { "start", "end" };
+	std::string axis[2][2] = { {"x", "y"}, { "lower", "greater" } };
 
-	for (int n = 0; n < POINT_FIXED_TOTAL; n++) {
+	for (int n = 0; n < PARENT_TOTAL; n++) {
 		for (int i = 0; i < AXIS_TOTAL; i++) {
 			if (pos[n][i] <= border[i][BORDER_MIN]) {
 				pos[n][i] = border[i][BORDER_MIN] + 1;
-				cerr << "\n\n Warning: shadow[" << No << "] " << whichPos[n] << "Pos." << axis[0][i] << " is " << axis[1][BORDER_MIN] << " than border. It was fixed to border";
+				std::cerr << "\n\n Warning: shadow[" << No << "] " << whichPos[n] << "Pos." << axis[0][i] << " is " << axis[1][BORDER_MIN] << " than border. It was fixed to border";
 			}
 
 			if (pos[n][i] >= border[i][BORDER_MAX]) {
 				pos[n][i] = border[i][BORDER_MAX] - 1;
-				cerr << "\n\n Warning: shadow[" << No << "] " << whichPos[n] << "Pos." << axis[0][i] << " is " << axis[1][BORDER_MAX] << " than border. It was fixed to border";
+				std::cerr << "\n\n Warning: shadow[" << No << "] " << whichPos[n] << "Pos." << axis[0][i] << " is " << axis[1][BORDER_MAX] << " than border. It was fixed to border";
 			}
 		}
 	}
 
-	startPoint.x = pos[POINT_START][AXIS_X];
-	startPoint.y = pos[POINT_START][AXIS_Y];
+	startPoint.x = pos[PARENT_START][AXIS_X];
+	startPoint.y = pos[PARENT_START][AXIS_Y];
 
-	endPoint.x = pos[POINT_END][AXIS_X];
-	endPoint.y = pos[POINT_END][AXIS_Y];
+	endPoint.x = pos[PARENT_END][AXIS_X];
+	endPoint.y = pos[PARENT_END][AXIS_Y];
 }
 
 
@@ -136,20 +139,17 @@ void shadowCast::removeShadow(int removeNo) {
 
 	if (shadowTotal > 0 && removeNo < shadowTotal && removeNo >= 0) {
 
-		for (int i = 0; i < POINT_FIXED_TOTAL; i++) {
-			fixedPoint.erase(fixedPoint.begin() + removeNo * POINT_FIXED_TOTAL);
-			fixedBorderHitPos.erase(fixedBorderHitPos.begin() + removeNo * POINT_FIXED_TOTAL);
-			fixedBorderHitSide.erase(fixedBorderHitSide.begin() + removeNo * POINT_FIXED_TOTAL);
+		for (int i = 0; i < PARENT_TOTAL; i++) {
+			parent.erase(parent.begin() + removeNo * PARENT_TOTAL);
 		}
-
+		
 		shadow.erase(shadow.begin() + removeNo);
-
 
 		shadowTotal--;
 	}
 
 	else {
-		cerr << "\n\n shadowCast.cpp: removeNo is out of scope";
+		std::cerr << "\n\n shadowCast.cpp: removeNo: " << removeNo << " is out of scope. Range is 0 to " << shadowTotal - 1;
 	}
 }
 
@@ -158,12 +158,12 @@ void shadowCast::removeShadow(int removeNo) {
 
 int shadowCast::findSide(float distance) {
 
-	if (distance < 0) return 1;
-	return 0;
+	if (distance < 0) return BORDER_MAX;
+	return BORDER_MIN;
 }
 
 
-void shadowCast::findSlope(Vector2f posA, Vector2f posB, float& h, float& v, float& m, float& b) {
+void shadowCast::findSlope(sf::Vector2f posA, sf::Vector2f posB, float& h, float& v, float& m, float& b) {
 	h = posA.x - posB.x;
 	v = posA.y - posB.y;
 
@@ -180,11 +180,11 @@ void shadowCast::findSlope(Vector2f posA, Vector2f posB, float& h, float& v, flo
 }
 
 
-bool shadowCast::findBorderIntersection(Vector2f& posV, Vector2i& borderSide, float h, float v, float m, float b, int axis) {
+bool shadowCast::findBorderIntersection(sf::Vector2f& posV, sf::Vector2i& borderSide, float h, float v, float m, float b, int axis) {
 
-	float pos[2] = { posV.x, posV.y };
+	float pos[AXIS_TOTAL] = { posV.x, posV.y };
 
-	float distances[2] = { h, v };
+	float distances[AXIS_TOTAL] = { h, v };
 
 	if (undefined) axis = AXIS_Y;
 
@@ -200,7 +200,7 @@ bool shadowCast::findBorderIntersection(Vector2f& posV, Vector2i& borderSide, fl
 		pos[!axis] = pos[axis] * m + b;
 	}
 
-	else {
+	else if (axis == AXIS_Y) {
 		pos[!axis] = (pos[axis] - b) / m;
 	}
 
@@ -216,16 +216,16 @@ bool shadowCast::findBorderIntersection(Vector2f& posV, Vector2i& borderSide, fl
 }
 
 
-void shadowCast::findCorners(Vector2f outerPoint[2], Vector2f innerPoint[2], Vector2f& midPoint, vector<Vector2i>& outerBorderHitSide, int m) {
+void shadowCast::findCorners(sf::Vector2f outerPoint[PARENT_TOTAL], sf::Vector2f innerPoint[PARENT_TOTAL], sf::Vector2f& midPoint, sf::Vector2i outerBorderHitSide[PARENT_TOTAL], int m) {
 
-	float outerPointArr[2][2] = {
-		{outerPoint[POINT_START].x, outerPoint[POINT_START].y},
-		{outerPoint[POINT_END].x, outerPoint[POINT_END].y}
+	float outerPointArr[PARENT_TOTAL][AXIS_TOTAL] = {
+		{outerPoint[PARENT_START].x, outerPoint[PARENT_START].y},
+		{outerPoint[PARENT_END].x, outerPoint[PARENT_END].y}
 	};
 
-	float fixedBorderIntersectPosArr[2][2] = {
-		{fixedBorderHitPos[m * POINT_FIXED_TOTAL + POINT_START].x, fixedBorderHitPos[m * POINT_FIXED_TOTAL + POINT_START].y},
-		{fixedBorderHitPos[m * POINT_FIXED_TOTAL + POINT_END].x, fixedBorderHitPos[m * POINT_FIXED_TOTAL + POINT_END].y}
+	float fixedBorderIntersectPosArr[PARENT_TOTAL][AXIS_TOTAL] = {
+		{parent[m * PARENT_TOTAL + PARENT_START].fixedBorderHitPos.x, parent[m * PARENT_TOTAL + PARENT_START].fixedBorderHitPos.y},
+		{parent[m * PARENT_TOTAL + PARENT_END].fixedBorderHitPos.x, parent[m * PARENT_TOTAL + PARENT_END].fixedBorderHitPos.y},
 	};
 
 	int axis, temp, count = 0;
@@ -233,18 +233,18 @@ void shadowCast::findCorners(Vector2f outerPoint[2], Vector2f innerPoint[2], Vec
 	bool midEnabled = false;
 
 
-	for (int i = 0; i < 2; i++) {
+	for (int i = 0; i < PARENT_TOTAL; i++) {
 
-		if (!(outerBorderHitSide[POINT_START].x == outerBorderHitSide[POINT_END].x &&
-			outerBorderHitSide[POINT_START].y == outerBorderHitSide[POINT_END].y)) {
+		if (!(outerBorderHitSide[PARENT_START].x == outerBorderHitSide[PARENT_END].x &&
+			outerBorderHitSide[PARENT_START].y == outerBorderHitSide[PARENT_END].y)) {
 
-			axis = fixedBorderHitSide[m * POINT_FIXED_TOTAL + i].x;
+			axis = parent[m * PARENT_TOTAL + i].fixedBorderHitSide.x;
 
-			if (outerBorderHitSide[i].x == fixedBorderHitSide[m * POINT_FIXED_TOTAL + i].x) {
-				if (outerBorderHitSide[i].y == fixedBorderHitSide[m * POINT_FIXED_TOTAL + i].y) {
+			if (outerBorderHitSide[i].x == parent[m * PARENT_TOTAL + i].fixedBorderHitSide.x) {
+				if (outerBorderHitSide[i].y == parent[m * PARENT_TOTAL + i].fixedBorderHitSide.y) {
 
-					if (outerPointArr[i][!axis] > fixedBorderIntersectPosArr[i][!axis]) temp = 1;
-					else temp = 0;
+					if (outerPointArr[i][!axis] > fixedBorderIntersectPosArr[i][!axis]) temp = AXIS_Y;
+					else temp = AXIS_X;
 
 					outerPointArr[i][!axis] = border[!axis][temp];
 
@@ -252,7 +252,7 @@ void shadowCast::findCorners(Vector2f outerPoint[2], Vector2f innerPoint[2], Vec
 				}
 			}
 
-			else if (fixedBorderHitSide[m * POINT_FIXED_TOTAL + POINT_START].x != fixedBorderHitSide[m * POINT_FIXED_TOTAL + POINT_END].x) {
+			else if (parent[m * PARENT_TOTAL + PARENT_START].fixedBorderHitSide.x != parent[m * PARENT_TOTAL + PARENT_END].fixedBorderHitSide.x) {
 				midEnabled = true;
 			}
 		}
@@ -262,26 +262,26 @@ void shadowCast::findCorners(Vector2f outerPoint[2], Vector2f innerPoint[2], Vec
 	}
 
 
-	if (count == 2 && fixedBorderHitSide[m * POINT_FIXED_TOTAL + POINT_START].x != fixedBorderHitSide[m * POINT_FIXED_TOTAL + POINT_END].x && innerPoint[POINT_START] != innerPoint[POINT_END]) {
+	if (count == 2 && parent[m * PARENT_TOTAL + PARENT_START].fixedBorderHitSide.x != parent[m * PARENT_TOTAL + PARENT_END].fixedBorderHitSide.x && innerPoint[PARENT_START] != innerPoint[PARENT_END]) {
 		midEnabled = true;
 	}
 
 	if (midEnabled) {
 
-		outerPointArr[POINT_START][!axis] = border[!axis][!fixedBorderHitSide[m * POINT_FIXED_TOTAL + POINT_START].y];
-		outerPointArr[POINT_START][axis] = border[axis][!fixedBorderHitSide[m * POINT_FIXED_TOTAL + POINT_END].y];
+		outerPointArr[PARENT_START][!axis] = border[!axis][!parent[m * PARENT_TOTAL + PARENT_START].fixedBorderHitSide.y];
+		outerPointArr[PARENT_START][axis] = border[axis][!parent[m * PARENT_TOTAL + PARENT_END].fixedBorderHitSide.y];
 
-		midPoint.x = outerPointArr[POINT_START][AXIS_X];
-		midPoint.y = outerPointArr[POINT_START][AXIS_Y];
+		midPoint.x = outerPointArr[PARENT_START][AXIS_X];
+		midPoint.y = outerPointArr[PARENT_START][AXIS_Y];
 	}
 
 	else {
-		midPoint = innerPoint[POINT_START];
+		midPoint = innerPoint[PARENT_START];
 	}
 }
 
 
-void shadowCast::updateShadows(Vector2f basePos) {
+void shadowCast::updateShadows(sf::Vector2f basePos) {
 
 	//	POINT PARENTS:
 	//	FIXED->OUTER->INNER | MID
@@ -289,19 +289,21 @@ void shadowCast::updateShadows(Vector2f basePos) {
 
 	float h, v, m, b;
 
-	Vector2f outerPoint[POINT_FIXED_TOTAL];
-	Vector2f innerPoint[POINT_FIXED_TOTAL];
-	Vector2f midPoint;
+	sf::Vector2f outerPoint[PARENT_TOTAL];
+	sf::Vector2f innerPoint[PARENT_TOTAL];
+	sf::Vector2f midPoint;
 
-	vector<Vector2i> outerBorderHitSide = { Vector2i(), Vector2i() };
+	sf::Vector2i outerBorderHitSide[PARENT_TOTAL] = { sf::Vector2i(), sf::Vector2i()};
 
 
 	for (int i = 0; i < shadowTotal; i++) {
 
 		//---FIND POINTS 6, 2 (OUTER)---//
-		for (int n = 0; n < POINT_FIXED_TOTAL; n++) {
 
-			findSlope(basePos, fixedPoint[i * POINT_FIXED_TOTAL + n], h, v, m, b);
+
+		for (int n = 0; n < PARENT_TOTAL; n++) {
+
+			findSlope(basePos, parent[i * PARENT_TOTAL + n].fixedPoint, h, v, m, b);
 
 			for (int j = 0; j < AXIS_TOTAL; j++) {
 				if (findBorderIntersection(outerPoint[n], outerBorderHitSide[n], h, v, m, b, j)) break;
@@ -315,7 +317,7 @@ void shadowCast::updateShadows(Vector2f basePos) {
 
 
 		//SET POINTS
-		for (int j = 0; j < POINT_FIXED_TOTAL; j++) {
+		for (int j = 0; j < PARENT_TOTAL; j++) {
 			shadow[i].setPoint(OUTER_POINT[j], outerPoint[j]);
 			shadow[i].setPoint(INNER_POINT[j], innerPoint[j]);
 		}

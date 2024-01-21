@@ -3,7 +3,7 @@
 
 
 void App::setWindow() {
-	window.create(VideoMode(width, height), "App", Style::None);
+	window.create(sf::VideoMode(width, height), "App", sf::Style::None);
 	window.setFramerateLimit(60);
 
 	windowGap.x = window.getPosition().x;
@@ -14,11 +14,11 @@ void App::setWindow() {
 void App::events() {
 	while (window.pollEvent(event))
 	{
-		if (event.type == Event::Closed) window.close();
+		if (event.type == sf::Event::Closed) window.close();
 
-		else if (event.type == Event::KeyPressed) {
+		else if (event.type == sf::Event::KeyPressed) {
 
-			if (event.key.code == Keyboard::Escape) {
+			if (event.key.code == sf::Keyboard::Escape) {
 				window.close();
 			}
 		}
@@ -32,17 +32,17 @@ App::App() {
 
 	
 
-	shadowObj.initShadowBorder(50, width - 50, height - 50, 50);
+	shadowObj.initShadowBorder(90, width - 70, height - 100, 80);
 
 
 
-	shadowObj.addShadow(Vector2f(120, 130), Vector2f(350, 500));
+	shadowObj.addShadow(sf::Vector2f(120, 130), sf::Vector2f(350, 500));
 
-	shadowObj.addShadow(Vector2f(500, 540), Vector2f(590, 620));
+	shadowObj.addShadow(sf::Vector2f(500, 540), sf::Vector2f(590, 620));
 
-	shadowObj.addShadow(Vector2f(450, 700), Vector2f(650, 500));
+	shadowObj.addShadow(sf::Vector2f(650, 500), sf::Vector2f(450, 700));
 
-	shadowObj.removeShadow(1);
+	shadowObj.removeShadow(0);
 
 
 
@@ -54,7 +54,7 @@ App::App() {
 
 
 
-		if (change) { shadowObj.changeShadowPos(Vector2f(400, 130), Vector2f(350, 315), 0); change = false; }
+		if (change) { shadowObj.changeShadowPos(sf::Vector2f(400, 130), sf::Vector2f(350, 315), 1); change = false; }
 
 		shadowObj.updateShadows(mousePos);
 
@@ -67,7 +67,7 @@ App::App() {
 
 void App::displays() {
 
-	window.clear(Color::Black);
+	window.clear(sf::Color::Black);
 
 
 	shadowObj.drawShadows(window);
@@ -80,7 +80,7 @@ void App::displays() {
 void App::getMousePos() {
 
 	//FIND MOUSE POS
-	mousePos.x = Mouse::getPosition().x - windowGap.x;
-	mousePos.y = Mouse::getPosition().y - windowGap.y;
+	mousePos.x = sf::Mouse::getPosition().x - windowGap.x;
+	mousePos.y = sf::Mouse::getPosition().y - windowGap.y;
 }
 
