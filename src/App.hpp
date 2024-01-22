@@ -1,18 +1,28 @@
 
-#include "shadowCast.cpp"
+//app.hpp
+#ifndef APP_HPP
+#define APP_HPP
+
+#include <SFML/Graphics.hpp>
+#include <iostream>
+
+#include "shadowCast.hpp"
 
 
 class App {
 private:
 
-	float width = 800;
-	float height = 800;
-
-	sf::Vector2f windowGap;
-
 	sf::RenderWindow window;
 
+	enum WindowSize {
+		WINDOW_WIDTH = 800,
+		WINDOW_HEIGHT = 800
+	};
+
+	sf::Vector2f windowPos;
+
 	sf::Event event;
+
 
 	sf::Vector2f mousePos;
 
@@ -36,3 +46,6 @@ public:
 
 	App();
 };
+
+
+#endif //APP_HPP

@@ -1,4 +1,8 @@
 
+//shadowCast.hpp
+#ifndef SHADOWCAST_HPP
+#define SHADOWCAST_HPP
+
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
@@ -75,7 +79,7 @@ public:
 
 	void drawShadows(sf::RenderWindow& window);
 
-	void addShadow(sf::Vector2f startPoint, sf::Vector2f endPoint, sf::Color shadowColor);
+	void addShadow(sf::Vector2f startPoint, sf::Vector2f endPoint, sf::Color shadowColor = sf::Color::White);
 
 	void removeShadow(int removeNo);
 
@@ -94,7 +98,10 @@ private:
 
 	void findSlope(sf::Vector2f posA, sf::Vector2f posB, float& h, float& v, float& m, float& b);
 
-	bool findBorderIntersection(sf::Vector2f& posV, sf::Vector2i& borderIntersectSide, float h, float v, float m, float b, int side);
+	bool findBorderIntersection(sf::Vector2f& hitPos, sf::Vector2i& borderIntersectSide, float h, float v, float m, float b, int side);
 
 	void findCorners(sf::Vector2f outerPoint[2], sf::Vector2f innerPoint[2], sf::Vector2f& midPoint, sf::Vector2i outerBorderHitSide[2], int m);
 };
+
+
+#endif // SHADOWCAST_HPP

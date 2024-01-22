@@ -44,7 +44,7 @@ void shadowCast::drawShadows(sf::RenderWindow& window) {
 }
 
 
-void shadowCast::addShadow(sf::Vector2f startPoint, sf::Vector2f endPoint, sf::Color shadowColor = sf::Color::White) {
+void shadowCast::addShadow(sf::Vector2f startPoint, sf::Vector2f endPoint, sf::Color shadowColor) {
 
 	for (int i = 0; i < PARENT_TOTAL; i++) {
 		parent.push_back({ sf::Vector2f(), sf::Vector2f(), sf::Vector2i() });
@@ -171,7 +171,7 @@ void shadowCast::findSlope(sf::Vector2f posA, sf::Vector2f posB, float& h, float
 	b = posA.y - posA.x * m;
 
 
-	if (h == 0) {
+	if (abs(h) < 0.0001) {
 		undefined = true;
 
 		m = 0;
@@ -180,9 +180,9 @@ void shadowCast::findSlope(sf::Vector2f posA, sf::Vector2f posB, float& h, float
 }
 
 
-bool shadowCast::findBorderIntersection(sf::Vector2f& posV, sf::Vector2i& borderSide, float h, float v, float m, float b, int axis) {
+bool shadowCast::findBorderIntersection(sf::Vector2f& hitPos, sf::Vector2i& borderSide, float h, float v, float m, float b, int axis) {
 
-	float pos[AXIS_TOTAL] = { posV.x, posV.y };
+	float pos[AXIS_TOTAL] = { hitPos.x, hitPos.y };
 
 	float distances[AXIS_TOTAL] = { h, v };
 
@@ -206,8 +206,8 @@ bool shadowCast::findBorderIntersection(sf::Vector2f& posV, sf::Vector2i& border
 
 
 	if (pos[!axis] >= border[!axis][BORDER_MIN] && pos[!axis] <= border[!axis][BORDER_MAX]) {
-		posV.x = pos[AXIS_X];
-		posV.y = pos[AXIS_Y];
+		hitPos.x = pos[AXIS_X];
+		hitPos.y = pos[AXIS_Y];
 
 		return true;
 	}
@@ -273,6 +273,9 @@ void shadowCast::findCorners(sf::Vector2f outerPoint[PARENT_TOTAL], sf::Vector2f
 
 		midPoint.x = outerPointArr[PARENT_START][AXIS_X];
 		midPoint.y = outerPointArr[PARENT_START][AXIS_Y];
+
+		system("cls");
+		std::cout << "\n ";
 	}
 
 	else {
@@ -308,6 +311,17 @@ void shadowCast::updateShadows(sf::Vector2f basePos) {
 			for (int j = 0; j < AXIS_TOTAL; j++) {
 				if (findBorderIntersection(outerPoint[n], outerBorderHitSide[n], h, v, m, b, j)) break;
 			}
+
+			/*
+			if (n == 0) {
+
+				system("cls");
+				std::cout << "\n\n h: " << h << " v: " << v << "\n m: " << m << "\n b: " << b;
+				std::cout << "\n\n posA pos: " << basePos.x << " | " << basePos.y;
+				std::cout << "\n\n posB pos: " << parent[0].fixedPoint.x << " | " << parent[0].fixedPoint.y;
+				std::cout << "\n\n fixed pos: " << outerPoint[0].x << " | " << outerPoint[0].y;
+			}
+			*/
 		}
 
 
@@ -321,7 +335,6 @@ void shadowCast::updateShadows(sf::Vector2f basePos) {
 			shadow[i].setPoint(OUTER_POINT[j], outerPoint[j]);
 			shadow[i].setPoint(INNER_POINT[j], innerPoint[j]);
 		}
-
 		shadow[i].setPoint(MID_POINT, midPoint);
 	}
 }

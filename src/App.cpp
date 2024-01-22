@@ -3,11 +3,11 @@
 
 
 void App::setWindow() {
-	window.create(sf::VideoMode(width, height), "App", sf::Style::None);
+	window.create(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "App", sf::Style::None);
 	window.setFramerateLimit(60);
 
-	windowGap.x = window.getPosition().x;
-	windowGap.y = window.getPosition().y;
+	windowPos.x = window.getPosition().x;
+	windowPos.y = window.getPosition().y;
 }
 
 
@@ -32,7 +32,7 @@ App::App() {
 
 	
 
-	shadowObj.initShadowBorder(90, width - 70, height - 100, 80);
+	shadowObj.initShadowBorder(90, WINDOW_WIDTH - 70, WINDOW_HEIGHT - 100, 80);
 
 
 
@@ -40,7 +40,7 @@ App::App() {
 
 	shadowObj.addShadow(sf::Vector2f(500, 540), sf::Vector2f(590, 620));
 
-	shadowObj.addShadow(sf::Vector2f(650, 500), sf::Vector2f(450, 700));
+	shadowObj.addShadow(sf::Vector2f(500, 600), sf::Vector2f(300, 700));
 
 	shadowObj.removeShadow(0);
 
@@ -80,7 +80,7 @@ void App::displays() {
 void App::getMousePos() {
 
 	//FIND MOUSE POS
-	mousePos.x = sf::Mouse::getPosition().x - windowGap.x;
-	mousePos.y = sf::Mouse::getPosition().y - windowGap.y;
+	mousePos.x = sf::Mouse::getPosition().x - windowPos.x;
+	mousePos.y = sf::Mouse::getPosition().y - windowPos.y;
 }
 
