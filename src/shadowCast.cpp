@@ -4,54 +4,47 @@
 
 shadowCast::shadowCast() {
 
-	initShadowBorder(0, 800, 800, 0);
+	initShadowBorder(0, 800, 0, 800);
+	borderShape.setOutlineColor(sf::Color::Red);
+	borderShape.setOutlineThickness(-1);
+	borderShape.setFillColor(sf::Color::Black);
 }
 
 
-void shadowCast::initShadowBorder(float topBorder, float rightBorder, float bottomBorder, float leftBorder) {
+void shadowCast::initShadowBorder(float leftBorder, float rightBorder, float topBorder, float bottomBorder) {
 
-	//ERROR CATCHING
-	if (leftBorder >= rightBorder) { 
-		leftBorder = 0; rightBorder = 800;
-		std::cerr << "\n shadowCast.cpp: Left border position cant be greater than right. Reverted to default";
-	}
-
-	if (topBorder >= bottomBorder) {
-		topBorder = 0; bottomBorder = 800;
-		std::cerr << "\n shadowCast.cpp: top border position cant be greater than bottom. Reverted to default";
-	}
 
 	//SET
-	border[AXIS_X][BORDER_MIN] = leftBorder;
-	border[AXIS_X][BORDER_MAX] = rightBorder;
-	border[AXIS_Y][BORDER_MIN] = topBorder;
-	border[AXIS_Y][BORDER_MAX] = bottomBorder;
+	border[X][BORDER_MIN] = leftBorder;
+	border[X][BORDER_MAX] = rightBorder;
+	border[Y][BORDER_MIN] = topBorder;
+	border[Y][BORDER_MAX] = bottomBorder;
 
-	borderCube.setFillColor(sf::Color::Black);
-	borderCube.setPosition(sf::Vector2f(border[AXIS_X][BORDER_MIN], border[AXIS_Y][BORDER_MIN]));
-	borderCube.setSize(sf::Vector2f(border[AXIS_X][BORDER_MAX] - border[AXIS_X][BORDER_MIN], border[AXIS_Y][BORDER_MAX] - border[AXIS_Y][BORDER_MIN]));
-	borderCube.setOutlineColor(sf::Color::Red);
-	borderCube.setOutlineThickness(-1);
+	borderInputErrorCatch();
+
+	borderShape.setPosition(sf::Vector2f(border[X][BORDER_MIN], border[Y][BORDER_MIN]));
+	borderShape.setSize(sf::Vector2f(border[X][BORDER_MAX] - border[X][BORDER_MIN], border[Y][BORDER_MAX] - border[Y][BORDER_MIN]));
 }
 
 
-void shadowCast::drawShadows(sf::RenderWindow& window) {
-	window.draw(borderCube);
+void shadowCast::borderInputErrorCatch() {
 
-	for (int i = 0; i < shadowTotal; i++) {
-		window.draw(shadow[i]);
+	std::string axisNames[AXIS_SIZE] = { "X", "Y" };
+
+	for (int axis = 0; axis < AXIS_SIZE; axis++) {
+		if (border[axis][BORDER_MIN] >= border[axis][BORDER_MAX]) {
+			border[axis][BORDER_MIN] = 0; border[axis][BORDER_MAX] = 800;
+			std::cerr << "\n\n shadowCast.cpp: " << axisNames[axis] << " axis: MIN cant be greater than MAX.Reverted to default";
+		}
 	}
 }
 
 
-void shadowCast::addShadow(sf::Vector2f startPoint, sf::Vector2f endPoint, sf::Color shadowColor) {
+void shadowCast::addShadow(sf::Vector2f startPoint, sf::Vector2f endPoint) {
 
-	for (int i = 0; i < PARENT_TOTAL; i++) {
-		parent.push_back({ sf::Vector2f(), sf::Vector2f(), sf::Vector2i() });
-	}
+	split.push_back({});
 
 	shadow.push_back(sf::ConvexShape(POINT_TOTAL));
-	shadow[shadowTotal].setFillColor(shadowColor);
 
 	setFixedPoint(startPoint, endPoint, shadowTotal);
 
@@ -59,282 +52,250 @@ void shadowCast::addShadow(sf::Vector2f startPoint, sf::Vector2f endPoint, sf::C
 }
 
 
-void shadowCast::changeShadowPos(sf::Vector2f startPoint, sf::Vector2f endPoint, int changeNo) {
-	
-	if (shadowTotal > 0 && changeNo < shadowTotal && changeNo >= 0) {
+void shadowCast::removeShadow(const int removeNo) {
 
-		setFixedPoint(startPoint, endPoint, changeNo);
-	}
+	if (!NumberInputErrorCatch(removeNo, "remove")) {
 
-	else {
-		std::cerr << "\n\n shadowCast.cpp: changeNo: " << changeNo << " is out of scope. Range is 0 to " << shadowTotal - 1;
-	}
-}
-
-
-void shadowCast::setFixedPoint(sf::Vector2f& startPoint, sf::Vector2f& endPoint, int No) {
-
-	//SET FIXED POINTS
-	fixedPointErrorCatch(startPoint, endPoint, No);
-
-	parent[No * PARENT_TOTAL + PARENT_START].fixedPoint = startPoint;
-	parent[No * PARENT_TOTAL + PARENT_END].fixedPoint = endPoint;
-
-	for (int i = 0; i < PARENT_TOTAL; i++) {
-		shadow[No].setPoint(FIXED_POINT[i], parent[No * PARENT_TOTAL + i].fixedPoint);
-	}
-
-
-	//FIND FIXED BORDER HIT POS AND SIDE
-	float h, v, m, b;
-
-	findSlope(parent[No * PARENT_TOTAL + PARENT_END].fixedPoint, parent[No * PARENT_TOTAL + PARENT_START].fixedPoint, h, v, m, b);
-
-	for (int i = 0; i < PARENT_TOTAL; i++) {
-
-		for (int j = 0; j < AXIS_TOTAL; j++) {
-
-			if (findBorderIntersection(parent[No * PARENT_TOTAL + i].fixedBorderHitPos, parent[No * PARENT_TOTAL + i].fixedBorderHitSide, h, v, m, b, j)) break;
-		}
-
-		h *= -1;
-		v *= -1;
-	}
-};
-
-
-void shadowCast::fixedPointErrorCatch(sf::Vector2f& startPoint, sf::Vector2f& endPoint, int No) {
-
-	float pos[2][2] = {
-		{startPoint.x, startPoint.y},
-		{endPoint.x, endPoint.y}
-	};
-
-	std::string whichPos[2] = { "start", "end" };
-	std::string axis[2][2] = { {"x", "y"}, { "lower", "greater" } };
-
-	for (int n = 0; n < PARENT_TOTAL; n++) {
-		for (int i = 0; i < AXIS_TOTAL; i++) {
-			if (pos[n][i] <= border[i][BORDER_MIN]) {
-				pos[n][i] = border[i][BORDER_MIN] + 1;
-				std::cerr << "\n\n Warning: shadow[" << No << "] " << whichPos[n] << "Pos." << axis[0][i] << " is " << axis[1][BORDER_MIN] << " than border. It was fixed to border";
-			}
-
-			if (pos[n][i] >= border[i][BORDER_MAX]) {
-				pos[n][i] = border[i][BORDER_MAX] - 1;
-				std::cerr << "\n\n Warning: shadow[" << No << "] " << whichPos[n] << "Pos." << axis[0][i] << " is " << axis[1][BORDER_MAX] << " than border. It was fixed to border";
-			}
-		}
-	}
-
-	startPoint.x = pos[PARENT_START][AXIS_X];
-	startPoint.y = pos[PARENT_START][AXIS_Y];
-
-	endPoint.x = pos[PARENT_END][AXIS_X];
-	endPoint.y = pos[PARENT_END][AXIS_Y];
-}
-
-
-void shadowCast::removeShadow(int removeNo) {
-
-	if (shadowTotal > 0 && removeNo < shadowTotal && removeNo >= 0) {
-
-		for (int i = 0; i < PARENT_TOTAL; i++) {
-			parent.erase(parent.begin() + removeNo * PARENT_TOTAL);
-		}
+		split.erase(split.begin() + removeNo);
 		
 		shadow.erase(shadow.begin() + removeNo);
 
 		shadowTotal--;
 	}
+}
 
-	else {
-		std::cerr << "\n\n shadowCast.cpp: removeNo: " << removeNo << " is out of scope. Range is 0 to " << shadowTotal - 1;
+
+void shadowCast::changeShadowPos(sf::Vector2f startPoint, sf::Vector2f endPoint, const int changeNo) {
+	
+	if (!NumberInputErrorCatch(changeNo, "change")) {
+		setFixedPoint(startPoint, endPoint, changeNo);
+	}
+}
+
+
+const bool shadowCast::NumberInputErrorCatch(const int No, const std::string NoName) {
+
+	if (shadowTotal == 0) {
+		std::cerr << "\n\n shadowCast.cpp: " << NoName << "No: " << No << " is out of scope. shadow total is 0.\n";
+		return true;
+	}
+
+	if (No >= shadowTotal || No < 0) {
+
+		std::cerr << "\n\n shadowCast.cpp: " << NoName << "No: " << No << " is out of scope. Range is 0 to " << shadowTotal - 1 << ".\n";
+		return true;
+	}
+	
+	return false;
+}
+
+
+void shadowCast::setFixedPoint(sf::Vector2f& startPoint, sf::Vector2f& endPoint, const int No) {
+
+	pointInputErrorCatch(startPoint, endPoint, No);
+
+	shadow[No].setPoint(FIXED_POINT[START], startPoint);
+	shadow[No].setPoint(FIXED_POINT[END], endPoint);
+
+	split[No][START].fixedPoint = startPoint;
+	split[No][END].fixedPoint = endPoint;
+
+
+	//FIND FIXED BORDER HIT POS AND SIDE
+	for (int i = 0; i < SPLIT_SIZE; i++) {
+
+		findBorderIntersection(split[No][!i].fixedPoint, split[No][i].fixedPoint, split[No][i].fixedBorderHitPoint, split[No][i].fixedBorderHitSide);
+	}
+}
+
+
+void shadowCast::pointInputErrorCatch(sf::Vector2f& startPoint, sf::Vector2f& endPoint, int No) {
+
+	float pos[SPLIT_SIZE][AXIS_SIZE] = {
+		{ startPoint.x, startPoint.y },
+		{ endPoint.x, endPoint.y }
+	};
+
+
+	std::string whichPos[SPLIT_SIZE] = { "start", "end" };
+	std::string axis[AXIS_SIZE][EXTREMUM_SIZE] = { {"x", "y"}, { "lower", "greater" } };
+
+	for (int n = 0; n < SPLIT_SIZE; n++) {
+		for (int i = 0; i < AXIS_SIZE; i++) {
+			if (pos[n][i] <= border[i][BORDER_MIN]) {
+				pos[n][i] = border[i][BORDER_MIN] + 1;
+				std::cerr << "\n\n Warning: shadow[" << No << "] " << whichPos[n] << "Pos." << axis[0][i] << " is " << axis[1][BORDER_MIN] << " than border. It was fixed to border.\n";
+			}
+
+			if (pos[n][i] >= border[i][BORDER_MAX]) {
+				pos[n][i] = border[i][BORDER_MAX] - 1;
+				std::cerr << "\n\n Warning: shadow[" << No << "] " << whichPos[n] << "Pos." << axis[0][i] << " is " << axis[1][BORDER_MAX] << " than border. It was fixed to border.\n";
+			}
+		}
+	}
+
+	startPoint.x = pos[START][X];
+	startPoint.y = pos[START][Y];
+
+	endPoint.x = pos[END][X];
+	endPoint.y = pos[END][Y];
+	
+	if (startPoint == endPoint) {
+		std::cerr << "\n\n Warning: shadow[" << No << "] startPoint and endPoint are equal.\n";
 	}
 }
 
 
 
 
-int shadowCast::findSide(float distance) {
+void shadowCast::findBorderIntersection(const sf::Vector2f& pointA, const sf::Vector2f& pointB, sf::Vector2f& hitPoint, BorderSide& hitSide) {
+	
+	float h, v, m, b;
 
-	if (distance < 0) return BORDER_MAX;
-	return BORDER_MIN;
-}
+	bool undefined = false;
 
-
-void shadowCast::findSlope(sf::Vector2f posA, sf::Vector2f posB, float& h, float& v, float& m, float& b) {
-	h = posA.x - posB.x;
-	v = posA.y - posB.y;
+	int axis = X;
+	
+	h = pointA.x - pointB.x;
+	v = pointA.y - pointB.y;
 
 	m = v / h;
-	b = posA.y - posA.x * m;
-
+	b = pointA.y - pointA.x * m;
 
 	if (abs(h) < 0.0001) {
 		undefined = true;
 
 		m = 0;
-		b = posA.x;
+		b = pointA.x;
+		axis = Y;
+	}
+
+	//CHECK BOTH AXIS
+
+	if (axis == X) {
+
+		hitSide.axis = X;
+		hitSide.extremum = (h < 0) ? BORDER_MAX : BORDER_MIN;
+
+		hitPoint.x = border[hitSide.axis][hitSide.extremum];
+		hitPoint.y = hitPoint.x * m + b;
+
+		//IF NOT WITHIN LIMITS CHECK OTHER AXIS
+		if (hitPoint.y < border[Y][BORDER_MIN] || hitPoint.y > border[Y][BORDER_MAX]) {
+			axis = Y;
+		}
+	}
+
+	if (axis == Y) {
+
+		hitSide.axis = Y;
+		hitSide.extremum = (v < 0) ? BORDER_MAX : BORDER_MIN;
+
+		hitPoint.y = border[hitSide.axis][hitSide.extremum];
+		hitPoint.x = (undefined) ? b : (hitPoint.y - b) / m;
 	}
 }
 
 
-bool shadowCast::findBorderIntersection(sf::Vector2f& hitPos, sf::Vector2i& borderSide, float h, float v, float m, float b, int axis) {
+void shadowCast::findCorners(const sf::Vector2f outerPoint[SPLIT_SIZE], sf::Vector2f innerPoint[SPLIT_SIZE], sf::Vector2f& midPoint, const BorderSide outerBorderSide[SPLIT_SIZE], int No) {
 
-	float pos[AXIS_TOTAL] = { hitPos.x, hitPos.y };
-
-	float distances[AXIS_TOTAL] = { h, v };
-
-	if (undefined) axis = AXIS_Y;
-
-
-	borderSide.x = axis;
-	borderSide.y = findSide(distances[axis]);
-
-
-	pos[axis] = border[axis][borderSide.y];
-
-	if (axis == AXIS_X || undefined) {
-		undefined = false;
-		pos[!axis] = pos[axis] * m + b;
-	}
-
-	else if (axis == AXIS_Y) {
-		pos[!axis] = (pos[axis] - b) / m;
-	}
-
-
-	if (pos[!axis] >= border[!axis][BORDER_MIN] && pos[!axis] <= border[!axis][BORDER_MAX]) {
-		hitPos.x = pos[AXIS_X];
-		hitPos.y = pos[AXIS_Y];
-
-		return true;
-	}
-
-	return false;
-}
-
-
-void shadowCast::findCorners(sf::Vector2f outerPoint[PARENT_TOTAL], sf::Vector2f innerPoint[PARENT_TOTAL], sf::Vector2f& midPoint, sf::Vector2i outerBorderHitSide[PARENT_TOTAL], int m) {
-
-	float outerPointArr[PARENT_TOTAL][AXIS_TOTAL] = {
-		{outerPoint[PARENT_START].x, outerPoint[PARENT_START].y},
-		{outerPoint[PARENT_END].x, outerPoint[PARENT_END].y}
+	float outerPointArr[SPLIT_SIZE][AXIS_SIZE] = {
+		{outerPoint[START].x, outerPoint[START].y},
+		{outerPoint[END].x, outerPoint[END].y}
 	};
 
-	float fixedBorderIntersectPosArr[PARENT_TOTAL][AXIS_TOTAL] = {
-		{parent[m * PARENT_TOTAL + PARENT_START].fixedBorderHitPos.x, parent[m * PARENT_TOTAL + PARENT_START].fixedBorderHitPos.y},
-		{parent[m * PARENT_TOTAL + PARENT_END].fixedBorderHitPos.x, parent[m * PARENT_TOTAL + PARENT_END].fixedBorderHitPos.y},
+	float fixedBorderHitPoint[SPLIT_SIZE][AXIS_SIZE] = {
+		{split[No][START].fixedBorderHitPoint.x, split[No][START].fixedBorderHitPoint.y},
+		{split[No][END].fixedBorderHitPoint.x, split[No][END].fixedBorderHitPoint.y},
 	};
 
-	int axis, temp, count = 0;
+	int axis, extremum, innerEnabledCount = 0;
 
 	bool midEnabled = false;
 
 
-	for (int i = 0; i < PARENT_TOTAL; i++) {
+	for (int i = 0; i < SPLIT_SIZE; i++) {
 
-		if (!(outerBorderHitSide[PARENT_START].x == outerBorderHitSide[PARENT_END].x &&
-			outerBorderHitSide[PARENT_START].y == outerBorderHitSide[PARENT_END].y)) {
+		if (!(outerBorderSide[START].axis == outerBorderSide[END].axis &&
+			outerBorderSide[START].extremum == outerBorderSide[END].extremum)) {
 
-			axis = parent[m * PARENT_TOTAL + i].fixedBorderHitSide.x;
+			axis = split[No][i].fixedBorderHitSide.axis;
 
-			if (outerBorderHitSide[i].x == parent[m * PARENT_TOTAL + i].fixedBorderHitSide.x) {
-				if (outerBorderHitSide[i].y == parent[m * PARENT_TOTAL + i].fixedBorderHitSide.y) {
+			if (outerBorderSide[i].axis == split[No][i].fixedBorderHitSide.axis) {
+				if (outerBorderSide[i].extremum == split[No][i].fixedBorderHitSide.extremum) {
 
-					if (outerPointArr[i][!axis] > fixedBorderIntersectPosArr[i][!axis]) temp = AXIS_Y;
-					else temp = AXIS_X;
+					extremum = (outerPointArr[i][!axis] > fixedBorderHitPoint[i][!axis]) ? BORDER_MAX : BORDER_MIN;
 
-					outerPointArr[i][!axis] = border[!axis][temp];
+					outerPointArr[i][!axis] = border[!axis][extremum];
 
-					count++;
+					innerEnabledCount++;
 				}
 			}
 
-			else if (parent[m * PARENT_TOTAL + PARENT_START].fixedBorderHitSide.x != parent[m * PARENT_TOTAL + PARENT_END].fixedBorderHitSide.x) {
+			else if (split[No][START].fixedBorderHitSide.axis != split[No][END].fixedBorderHitSide.axis) {
 				midEnabled = true;
 			}
 		}
 
-		innerPoint[i].x = outerPointArr[i][AXIS_X];
-		innerPoint[i].y = outerPointArr[i][AXIS_Y];
+		innerPoint[i].x = outerPointArr[i][X];
+		innerPoint[i].y = outerPointArr[i][Y];
 	}
 
 
-	if (count == 2 && parent[m * PARENT_TOTAL + PARENT_START].fixedBorderHitSide.x != parent[m * PARENT_TOTAL + PARENT_END].fixedBorderHitSide.x && innerPoint[PARENT_START] != innerPoint[PARENT_END]) {
+	if (innerEnabledCount == 2 && split[No][START].fixedBorderHitSide.axis != split[No][END].fixedBorderHitSide.axis && innerPoint[START] != innerPoint[END]) {
 		midEnabled = true;
 	}
 
 	if (midEnabled) {
 
-		outerPointArr[PARENT_START][!axis] = border[!axis][!parent[m * PARENT_TOTAL + PARENT_START].fixedBorderHitSide.y];
-		outerPointArr[PARENT_START][axis] = border[axis][!parent[m * PARENT_TOTAL + PARENT_END].fixedBorderHitSide.y];
+		outerPointArr[START][!axis] = border[!axis][!split[No][START].fixedBorderHitSide.extremum];
+		outerPointArr[START][axis] = border[axis][!split[No][END].fixedBorderHitSide.extremum];
 
-		midPoint.x = outerPointArr[PARENT_START][AXIS_X];
-		midPoint.y = outerPointArr[PARENT_START][AXIS_Y];
-
-		system("cls");
-		std::cout << "\n ";
+		midPoint.x = outerPointArr[START][X];
+		midPoint.y = outerPointArr[START][Y];
 	}
 
 	else {
-		midPoint = innerPoint[PARENT_START];
+		midPoint = innerPoint[START];
 	}
 }
 
 
-void shadowCast::updateShadows(sf::Vector2f basePos) {
+void shadowCast::updateShadows(const sf::Vector2f& basePos) {
 
-	//	POINT PARENTS:
+	//	POINT PARENT ORDER:
 	//	FIXED->OUTER->INNER | MID
 	//	0->6->5 | 4 | 1->2->3
 
-	float h, v, m, b;
-
-	sf::Vector2f outerPoint[PARENT_TOTAL];
-	sf::Vector2f innerPoint[PARENT_TOTAL];
+	sf::Vector2f outerPoint[SPLIT_SIZE];
+	sf::Vector2f innerPoint[SPLIT_SIZE];
 	sf::Vector2f midPoint;
 
-	sf::Vector2i outerBorderHitSide[PARENT_TOTAL] = { sf::Vector2i(), sf::Vector2i()};
+	BorderSide outerPointSide[SPLIT_SIZE];
 
 
-	for (int i = 0; i < shadowTotal; i++) {
+	for (int No = 0; No < shadowTotal; No++) {
 
 		//---FIND POINTS 6, 2 (OUTER)---//
 
 
-		for (int n = 0; n < PARENT_TOTAL; n++) {
+		for (int i = 0; i < SPLIT_SIZE; i++) {
 
-			findSlope(basePos, parent[i * PARENT_TOTAL + n].fixedPoint, h, v, m, b);
-
-			for (int j = 0; j < AXIS_TOTAL; j++) {
-				if (findBorderIntersection(outerPoint[n], outerBorderHitSide[n], h, v, m, b, j)) break;
-			}
-
-			/*
-			if (n == 0) {
-
-				system("cls");
-				std::cout << "\n\n h: " << h << " v: " << v << "\n m: " << m << "\n b: " << b;
-				std::cout << "\n\n posA pos: " << basePos.x << " | " << basePos.y;
-				std::cout << "\n\n posB pos: " << parent[0].fixedPoint.x << " | " << parent[0].fixedPoint.y;
-				std::cout << "\n\n fixed pos: " << outerPoint[0].x << " | " << outerPoint[0].y;
-			}
-			*/
+			findBorderIntersection(basePos, split[No][i].fixedPoint, outerPoint[i], outerPointSide[i]);
 		}
 
 
 		//---FIND POINTS 5, 3 (INNER), 4 (MID)---//
 
-		findCorners(outerPoint, innerPoint, midPoint, outerBorderHitSide, i);
+		findCorners(outerPoint, innerPoint, midPoint, outerPointSide, No);
+
 
 
 		//SET POINTS
-		for (int j = 0; j < PARENT_TOTAL; j++) {
-			shadow[i].setPoint(OUTER_POINT[j], outerPoint[j]);
-			shadow[i].setPoint(INNER_POINT[j], innerPoint[j]);
+		for (int i = 0; i < SPLIT_SIZE; i++) {
+			shadow[No].setPoint(OUTER_POINT[i], outerPoint[i]);
+			shadow[No].setPoint(INNER_POINT[i], innerPoint[i]);
 		}
-		shadow[i].setPoint(MID_POINT, midPoint);
+		shadow[No].setPoint(MID_POINT, midPoint);
 	}
 }

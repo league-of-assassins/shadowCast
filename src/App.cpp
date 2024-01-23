@@ -28,11 +28,13 @@ void App::events() {
 
 App::App() {
 
+	//--INITS--//
+
 	setWindow();
 
 	
 
-	shadowObj.initShadowBorder(90, WINDOW_WIDTH - 70, WINDOW_HEIGHT - 100, 80);
+	shadowObj.initShadowBorder(90, WINDOW_WIDTH - 70, 80, WINDOW_HEIGHT - 100);
 
 
 
@@ -40,11 +42,12 @@ App::App() {
 
 	shadowObj.addShadow(sf::Vector2f(500, 540), sf::Vector2f(590, 620));
 
-	shadowObj.addShadow(sf::Vector2f(500, 600), sf::Vector2f(300, 700));
+	shadowObj.addShadow(sf::Vector2f(200, 300), sf::Vector2f(450, 560));
 
 	shadowObj.removeShadow(0);
 
 
+	//--WINDOW LOOP--//
 
 	while (window.isOpen())
 	{
@@ -69,8 +72,12 @@ void App::displays() {
 
 	window.clear(sf::Color::Black);
 
+	
+	window.draw(shadowObj.borderShape);
 
-	shadowObj.drawShadows(window);
+	for (int i = 0; i < shadowObj.shadow.size(); i++) {
+		window.draw(shadowObj.shadow[i]);
+	}
 	
 
 	window.display();
