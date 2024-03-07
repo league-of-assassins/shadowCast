@@ -8,6 +8,9 @@ shadowCast::shadowCast() {
 	borderShape.setOutlineColor(sf::Color::Red);
 	borderShape.setOutlineThickness(-1);
 	borderShape.setFillColor(sf::Color::Black);
+
+	oldBasePos.x = 99999;
+	oldBasePos.y = 99999;
 }
 
 
@@ -57,7 +60,7 @@ void shadowCast::removeShadow(const int removeNo) {
 	if (!NumberInputErrorCatch(removeNo, "remove")) {
 
 		split.erase(split.begin() + removeNo);
-		
+
 		shadow.erase(shadow.begin() + removeNo);
 
 		shadowTotal--;
@@ -66,7 +69,7 @@ void shadowCast::removeShadow(const int removeNo) {
 
 
 void shadowCast::changeShadowPos(sf::Vector2f startPoint, sf::Vector2f endPoint, const int changeNo) {
-	
+
 	if (!NumberInputErrorCatch(changeNo, "change")) {
 		setFixedPoint(startPoint, endPoint, changeNo);
 	}
@@ -85,7 +88,7 @@ const bool shadowCast::NumberInputErrorCatch(const int No, const std::string NoN
 		std::cerr << "\n\n shadowCast.cpp: " << NoName << "No: " << No << " is out of scope. Range is 0 to " << shadowTotal - 1 << ".\n";
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -139,7 +142,7 @@ void shadowCast::pointInputErrorCatch(sf::Vector2f& startPoint, sf::Vector2f& en
 
 	endPoint.x = pos[END][X];
 	endPoint.y = pos[END][Y];
-	
+
 	if (startPoint == endPoint) {
 		std::cerr << "\n\n Warning: shadow[" << No << "] startPoint and endPoint are equal.\n";
 	}
@@ -149,13 +152,13 @@ void shadowCast::pointInputErrorCatch(sf::Vector2f& startPoint, sf::Vector2f& en
 
 
 void shadowCast::findBorderIntersection(const sf::Vector2f& pointA, const sf::Vector2f& pointB, sf::Vector2f& hitPoint, BorderSide& hitSide) {
-	
+
 	float h, v, m, b;
 
 	bool undefined = false;
 
 	int axis = X;
-	
+
 	h = pointA.x - pointB.x;
 	v = pointA.y - pointB.y;
 
@@ -247,12 +250,8 @@ void shadowCast::findCorners(const sf::Vector2f outerPoint[SPLIT_SIZE], sf::Vect
 	}
 
 	if (midEnabled) {
-
-		outerPointArr[START][!axis] = border[!axis][!split[No][START].fixedBorderHitSide.extremum];
-		outerPointArr[START][axis] = border[axis][!split[No][END].fixedBorderHitSide.extremum];
-
-		midPoint.x = outerPointArr[START][X];
-		midPoint.y = outerPointArr[START][Y];
+		midPoint.x = border[X][!split[No][START].fixedBorderHitSide.extremum];
+		midPoint.y = border[Y][!split[No][END].fixedBorderHitSide.extremum];
 	}
 
 	else {
@@ -263,39 +262,43 @@ void shadowCast::findCorners(const sf::Vector2f outerPoint[SPLIT_SIZE], sf::Vect
 
 void shadowCast::updateShadows(const sf::Vector2f& basePos) {
 
-	//	POINT PARENT ORDER:
-	//	FIXED->OUTER->INNER | MID
-	//	0->6->5 | 4 | 1->2->3
+	if (basePos != oldBasePos) {
 
-	sf::Vector2f outerPoint[SPLIT_SIZE];
-	sf::Vector2f innerPoint[SPLIT_SIZE];
-	sf::Vector2f midPoint;
+		oldBasePos = basePos;
 
-	BorderSide outerPointSide[SPLIT_SIZE];
+		//	POINT PARENT ORDER:
+		//	FIXED->OUTER->INNER | MID
+		//	0->6->5 | 4 | 1->2->3
+
+		sf::Vector2f outerPoint[SPLIT_SIZE];
+		sf::Vector2f innerPoint[SPLIT_SIZE];
+		sf::Vector2f midPoint;
+
+		BorderSide outerPointSide[SPLIT_SIZE];
 
 
-	for (int No = 0; No < shadowTotal; No++) {
+		for (int No = 0; No < shadowTotal; No++) {
 
-		//---FIND POINTS 6, 2 (OUTER)---//
+			//---FIND POINTS 6, 2 (OUTER)---//
+
+			for (int i = 0; i < SPLIT_SIZE; i++) {
+
+				findBorderIntersection(basePos, split[No][i].fixedPoint, outerPoint[i], outerPointSide[i]);
+			}
 
 
-		for (int i = 0; i < SPLIT_SIZE; i++) {
+			//---FIND POINTS 5, 3 (INNER), 4 (MID)---//
 
-			findBorderIntersection(basePos, split[No][i].fixedPoint, outerPoint[i], outerPointSide[i]);
+			findCorners(outerPoint, innerPoint, midPoint, outerPointSide, No);
+
+
+
+			//SET POINTS
+			for (int i = 0; i < SPLIT_SIZE; i++) {
+				shadow[No].setPoint(OUTER_POINT[i], outerPoint[i]);
+				shadow[No].setPoint(INNER_POINT[i], innerPoint[i]);
+			}
+			shadow[No].setPoint(MID_POINT, midPoint);
 		}
-
-
-		//---FIND POINTS 5, 3 (INNER), 4 (MID)---//
-
-		findCorners(outerPoint, innerPoint, midPoint, outerPointSide, No);
-
-
-
-		//SET POINTS
-		for (int i = 0; i < SPLIT_SIZE; i++) {
-			shadow[No].setPoint(OUTER_POINT[i], outerPoint[i]);
-			shadow[No].setPoint(INNER_POINT[i], innerPoint[i]);
-		}
-		shadow[No].setPoint(MID_POINT, midPoint);
 	}
 }

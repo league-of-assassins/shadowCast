@@ -69,6 +69,7 @@ private:
 
 	float border[AXIS_SIZE][EXTREMUM_SIZE];
 
+	sf::Vector2f oldBasePos;
 
 	int shadowTotal = 0;
 

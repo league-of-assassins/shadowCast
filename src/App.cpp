@@ -32,7 +32,7 @@ App::App() {
 
 	setWindow();
 
-	
+
 
 	shadowObj.initShadowBorder(90, WINDOW_WIDTH - 70, 80, WINDOW_HEIGHT - 100);
 
@@ -72,13 +72,13 @@ void App::displays() {
 
 	window.clear(sf::Color::Black);
 
-	
+
 	window.draw(shadowObj.borderShape);
 
 	for (int i = 0; i < shadowObj.shadow.size(); i++) {
 		window.draw(shadowObj.shadow[i]);
 	}
-	
+
 
 	window.display();
 }
@@ -90,4 +90,3 @@ void App::getMousePos() {
 	mousePos.x = sf::Mouse::getPosition().x - windowPos.x;
 	mousePos.y = sf::Mouse::getPosition().y - windowPos.y;
 }
-
