@@ -11,11 +11,11 @@ Usage:
 
     Add shadows by passing two positions
 
-    Remove any shadow
+    Remove any shadow by passing index number
 
     Need to call update inside window loop as base pos keeps changing
 
-    Need to call draw function
+    Need to call draw function inside window loop
 
 
 

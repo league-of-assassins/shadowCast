@@ -10,12 +10,16 @@ int main() {
 
 	//--INITS--//
 
-	sf::RenderWindow window(sf::VideoMode(800, 800), "Shadow Cast", sf::Style::None);
+	sf::Vector2u windowSize(800, 800);
+
+	sf::RenderWindow window(sf::VideoMode(windowSize.x, windowSize.y), "Shadow Cast", sf::Style::None);
 	window.setFramerateLimit(60);
 
 
 
-	ShadowCast shadowCast(sf::Vector2f(90, 80), sf::Vector2f(800 - 70 - 90, 800 - 100 - 80));
+	const float borderGap = 50;
+
+	ShadowCast shadowCast(sf::Vector2f(borderGap, borderGap), sf::Vector2f(windowSize.x - borderGap * 2, windowSize.y - borderGap * 2));
 
 
 	shadowCast.add(sf::Vector2f(500, 540), sf::Vector2f(590, 620));

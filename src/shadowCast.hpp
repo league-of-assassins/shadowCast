@@ -85,7 +85,7 @@ private:
 public:
 
 
-	ShadowCast(const sf::Vector2f borderPos = sf::Vector2f(50, 50), const sf::Vector2f borderSize = sf::Vector2f(750, 750)) : oldBasePos(sf::Vector2f(99999, 99999)) {
+	ShadowCast(const sf::Vector2f borderPos = sf::Vector2f(50, 50), const sf::Vector2f borderSize = sf::Vector2f(700, 700)) : oldBasePos(sf::Vector2f(99999, 99999)) {
 
 		border[X][BORDER_MIN] = borderPos.x;
 		border[X][BORDER_MAX] = borderPos.x + borderSize.x;
